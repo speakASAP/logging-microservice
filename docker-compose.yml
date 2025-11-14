@@ -1,0 +1,35 @@
+services:
+  logging-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logging-microservice
+    ports:
+      - "${PORT:-3009}:3009"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3009}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_STORAGE_PATH=/app/logs
+      - LOG_ROTATION_MAX_SIZE=${LOG_ROTATION_MAX_SIZE:-100m}
+      - LOG_ROTATION_MAX_FILES=${LOG_ROTATION_MAX_FILES:-10}
+      - LOG_TIMESTAMP_FORMAT=${LOG_TIMESTAMP_FORMAT:-YYYY-MM-DD HH:mm:ss}
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - nginx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  nginx-network:
+    external: true
+    name: ${NGINX_NETWORK_NAME:-nginx-network}
