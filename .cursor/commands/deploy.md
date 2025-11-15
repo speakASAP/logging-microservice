@@ -1,26 +1,42 @@
 # Production Deployment
 
-## Task: Deploy our application on production
+## Task: Deploy logging-microservice on production
 
-## Details needed
+## Quick Deployment
 
-Our application consists of 3 microservices in /home/statex/. Access via ssh statex.
+```bash
+# 1. Pull latest code
+ssh statex "cd /home/statex/logging-microservice && git pull origin master"
 
-Initial task: pull github repos using ssh statex "cd logging-microservice && git pull && cd ../nginx-microservice && git pull && docker exec nginx-microservice nginx -t && docker exec nginx-microservice nginx -s reload"
-In case there will be local file changes they needs to be checked against github version and git repo should be corrected with working codebase.
+# 2. Deploy service
+ssh statex "cd /home/statex/logging-microservice && ./scripts/deploy.sh"
 
-nginx-microservice handles blue/green deployments.
-Use the same nginx and database setup to manage logging-microservice:
-Run: ssh statex "cd nginx-microservice && ./scripts/blue-green/deploy.sh logging-microservice"
+# 3. Register domain (if not exists)
+ssh statex "cd /home/statex/nginx-microservice && ./scripts/add-domain.sh logging.statex.cz logging-microservice 3268 admin@statex.cz"
 
-database-server is the PostgreSQL database for the app.
+# 4. Fix nginx proxy_pass if needed
+ssh statex "sed -i 's|proxy_pass \$backend_api/api/;|proxy_pass \$backend_api;|' /home/statex/nginx-microservice/nginx/conf.d/logging.statex.cz.conf"
 
-Applications are located at /Users/sergiystashok/Documents/GitHub/ (prod: /home/statex).
+# 5. Copy certificate if add-domain failed
+ssh statex "cd /home/statex/nginx-microservice && mkdir -p certificates/logging.statex.cz && docker exec nginx-certbot cat /etc/letsencrypt/live/logging.statex.cz/fullchain.pem > certificates/logging.statex.cz/fullchain.pem && docker exec nginx-certbot cat /etc/letsencrypt/live/logging.statex.cz/privkey.pem > certificates/logging.statex.cz/privkey.pem && chmod 600 certificates/logging.statex.cz/privkey.pem"
 
-Configs and logs are in project root folders and ./logs/.
-Environment variables are protected and stored within root folder for each project. Use command cat .env to see it
+# 6. Reload nginx
+ssh statex "docker exec nginx-microservice nginx -t && docker exec nginx-microservice nginx -s reload"
 
-This modular architecture improves development and separation of services.
+# 7. Verify deployment
+ssh statex "curl -s https://logging.statex.cz/health && docker run --rm --network nginx-network alpine/curl:latest curl -s http://logging-microservice:3268/health"
+```
 
+## Success Criteria
 
-Success is when http://logging-microservice:3268 accessible and there are no warnings or errors in the logs.
+- Service accessible: `https://logging.statex.cz/health` returns success
+- Internal access: `http://logging-microservice:3268/health` returns success
+- No errors in logs: `docker compose logs logging-service | grep -i error`
+
+## Notes
+
+- Port: 3268
+- Internal URL: `http://logging-microservice:3268`
+- External URL: `https://logging.statex.cz`
+- Service registry: `/home/statex/nginx-microservice/service-registry/logging-microservice.json`
+- Environment: `.env` file in project root (PORT=3268)
