@@ -36,13 +36,25 @@ Centralized logging service for the FlipFlop.cz e-commerce platform. Collects, s
 
 ## API Interface
 
-### Base URL
+### Base URLs
+
+**Internal Access** (Docker network):
 
 ```text
 http://logging-microservice:3268
 ```
 
-**Note**: When services are on the same Docker network (`nginx-network`), use the service name `logging-microservice`. For external access, use the host IP and port `3268`.
+**External Access** (via HTTPS):
+
+```text
+https://logging.statex.cz
+```
+
+**Note**:
+
+- For services on the same Docker network (`nginx-network`), use the internal URL: `http://logging-microservice:3268`
+- For external/public access, use: `https://logging.statex.cz`
+- The external URL is managed by nginx-microservice with automatic SSL certificate management
 
 ### API Endpoints
 
@@ -473,7 +485,7 @@ async function sendLog(level: string, message: string, service: string, metadata
 
 The e-commerce project uses the centralized logger from `shared/logger/logger.util.ts` which:
 
-- Sends logs to `http://logging-microservice:3268/api/logs`
+- Sends logs to `http://logging-microservice:3268/api/logs` (internal network)
 - Falls back to local file logging if service is unavailable
 - Includes retry logic and error handling
 
@@ -485,6 +497,8 @@ LOG_LEVEL=info
 LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 ```
 
+**Note**: Use the internal Docker network URL (`http://logging-microservice:3268`) for services on the same Docker network. For external access, use `https://logging.statex.cz`.
+
 ## Production Deployment
 
 ### Prerequisites
@@ -492,41 +506,102 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 1. Docker and Docker Compose installed
 2. Access to production server (ssh statex)
 3. nginx-network Docker network exists (created by nginx-microservice)
+4. nginx-microservice running and configured
 
 ### Deployment Steps
 
-1. **SSH to production server**:
+#### Step 1: Pull Latest Code
+
+```bash
+ssh statex
+cd /home/statex/logging-microservice
+git pull origin master
+```
+
+#### Step 2: Configure Environment
+
+Ensure `.env` file exists with production values:
+
+```bash
+cd /home/statex/logging-microservice
+cat .env  # Verify configuration
+# PORT should be 3268
+```
+
+#### Step 3: Deploy Service
+
+```bash
+cd /home/statex/logging-microservice
+./scripts/deploy.sh
+```
+
+This will:
+
+- Build Docker image
+- Start the service on port 3268
+- Connect to nginx-network
+- Run health checks
+
+#### Step 4: Register with nginx-microservice
+
+The service needs to be registered in nginx-microservice for external access:
+
+1. **Service Registry** (already configured):
+   - File: `/home/statex/nginx-microservice/service-registry/logging-microservice.json`
+   - Contains service configuration for blue/green deployment
+
+2. **Register Domain** (if not already done):
 
    ```bash
    ssh statex
+   cd /home/statex/nginx-microservice
+   ./scripts/add-domain.sh logging.statex.cz logging-microservice 3268 admin@statex.cz
    ```
 
-2. **Navigate to logging-microservice directory**:
+   This will:
+   - Create nginx configuration
+   - Request SSL certificate from Let's Encrypt
+   - Configure HTTPS access
+
+3. **Verify Domain Registration**:
 
    ```bash
-   cd /home/statex/logging-microservice
-   # Or if in separate location:
-   cd /path/to/logging-microservice
+   # Check nginx config
+   docker exec nginx-microservice nginx -t
+   
+   # Test external access
+   curl https://logging.statex.cz/health
    ```
 
-3. **Create .env file** (if not exists):
+#### Step 5: Verify Deployment
 
-   ```bash
-   cp .env.example .env
-   # Edit .env with production values
-   ```
+```bash
+# Check service status
+cd /home/statex/logging-microservice
+./scripts/status.sh
 
-4. **Deploy**:
+# Test internal access
+docker run --rm --network nginx-network alpine/curl:latest \
+  curl -s http://logging-microservice:3268/health
 
-   ```bash
-   ./scripts/deploy.sh
-   ```
+# Test external access
+curl https://logging.statex.cz/health
+```
 
-5. **Verify**:
+### Access Points
 
-   ```bash
-   ./scripts/status.sh
-   ```
+The service is accessible via:
+
+1. **Internal Access** (within Docker network):
+   - URL: `http://logging-microservice:3268`
+   - Used by other microservices on the same network
+   - No SSL required (internal network)
+
+2. **External Access** (via HTTPS):
+   - URL: `https://logging.statex.cz`
+   - Public internet access
+   - SSL certificate managed by nginx-microservice
+   - Certificate auto-renewal via Let's Encrypt
 
 ### Network Configuration
 
@@ -537,6 +612,38 @@ To verify network connection:
 ```bash
 docker network inspect nginx-network | grep logging-microservice
 ```
+
+### Service Registry
+
+The service is registered in nginx-microservice's service registry for blue/green deployment support:
+
+- **Registry File**: `/home/statex/nginx-microservice/service-registry/logging-microservice.json`
+- **State File**: `/home/statex/nginx-microservice/state/logging-microservice.json`
+
+The registry contains:
+
+- Service name and paths
+- Container configuration
+- Health check endpoints
+- Port configuration (3268)
+
+### Blue/Green Deployment
+
+The service supports blue/green deployment via nginx-microservice:
+
+```bash
+cd /home/statex/nginx-microservice
+./scripts/blue-green/deploy.sh logging-microservice
+```
+
+This will:
+
+1. Build and start new deployment (green)
+2. Run health checks
+3. Switch traffic to new deployment
+4. Monitor and cleanup old deployment
+
+See [nginx-microservice Blue/Green Deployment Guide](https://github.com/speakASAP/nginx-microservice/blob/master/docs/BLUE_GREEN_DEPLOYMENT.md) for details.
 
 ## Troubleshooting
 
@@ -735,11 +842,15 @@ Monitoring capabilities:
 
 Important implementation details:
 
-- Service runs on port 3268
-- Must be on nginx-network for service discovery
-- Logs persist in `./logs/` directory (mounted volume)
-- No database required (file-based storage)
-- Can be enhanced with database for better querying if needed
+- **Port**: Service runs on port 3268 (both container and host)
+- **Network**: Must be on nginx-network for service discovery
+- **Log Storage**: Logs persist in `./logs/` directory (mounted volume on host filesystem)
+- **Storage Format**: Dual format - JSON (`{service}.log`) and human-readable (`{service}.human.log`)
+- **Database**: No database required (file-based storage)
+- **External Access**: Available via `https://logging.statex.cz` (managed by nginx-microservice)
+- **Internal Access**: Available via `http://logging-microservice:3268` (Docker network)
+- **SSL Certificates**: Managed automatically by nginx-microservice via Let's Encrypt
+- **Future Enhancement**: Can be enhanced with database for better querying if needed
 
 ## Success Criteria
 
