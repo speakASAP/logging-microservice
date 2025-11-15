@@ -34,7 +34,7 @@ echo "Waiting for service to be healthy..."
 sleep 5
 
 # Check health
-if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3009/health 2>/dev/null; then
+if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3268/health 2>/dev/null; then
   echo "✅ Update complete - service is healthy"
 else
   echo "⚠️  Health check failed, but service may still be starting..."
