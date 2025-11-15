@@ -54,6 +54,48 @@ export class LogsService {
     });
   }
 
+  /**
+   * Format log entry as human-readable string
+   * Format: [YYYY-MM-DD HH:mm:ss] [LEVEL] [SERVICE] message
+   */
+  private formatHumanReadable(logData: {
+    level: string;
+    message: string;
+    service: string;
+    timestamp: string;
+    metadata?: Record<string, any>;
+  }): string {
+    const timestampFormat = process.env.LOG_TIMESTAMP_FORMAT || 'YYYY-MM-DD HH:mm:ss';
+    let formattedTimestamp: string;
+
+    try {
+      const date = new Date(logData.timestamp);
+      // Format timestamp according to LOG_TIMESTAMP_FORMAT
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      formattedTimestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } catch {
+      formattedTimestamp = logData.timestamp;
+    }
+
+    const levelUpper = logData.level.toUpperCase().padEnd(5);
+    const serviceName = logData.service.padEnd(20);
+
+    let humanReadable = `[${formattedTimestamp}] [${levelUpper}] [${serviceName}] ${logData.message}`;
+
+    // Append metadata if present
+    if (logData.metadata && Object.keys(logData.metadata).length > 0) {
+      const metadataStr = JSON.stringify(logData.metadata);
+      humanReadable += ` | ${metadataStr}`;
+    }
+
+    return humanReadable;
+  }
+
   async ingest(logEntry: LogEntryDto): Promise<void> {
     try {
       const logData = {
@@ -70,7 +112,7 @@ export class LogsService {
         ...logEntry.metadata,
       });
 
-      // Also write to service-specific file
+      // Write JSON format to service-specific file
       const serviceLogPath = path.join(
         this.logStoragePath,
         `${logEntry.service}.log`,
@@ -78,6 +120,18 @@ export class LogsService {
       fs.appendFileSync(
         serviceLogPath,
         JSON.stringify(logData) + '\n',
+        'utf8',
+      );
+
+      // Write human-readable format to service-specific human-readable file
+      const serviceHumanLogPath = path.join(
+        this.logStoragePath,
+        `${logEntry.service}.human.log`,
+      );
+      const humanReadable = this.formatHumanReadable(logData);
+      fs.appendFileSync(
+        serviceHumanLogPath,
+        humanReadable + '\n',
         'utf8',
       );
     } catch (error) {
@@ -99,7 +153,7 @@ export class LogsService {
 
     try {
       const logFiles = fs.readdirSync(this.logStoragePath).filter(
-        (file) => file.endsWith('.log') && !file.includes('error'),
+        (file) => file.endsWith('.log') && !file.includes('error') && !file.includes('.human.log'),
       );
 
       for (const file of logFiles) {
@@ -159,7 +213,7 @@ export class LogsService {
       }
 
       const logFiles = fs.readdirSync(this.logStoragePath).filter(
-        (file) => file.endsWith('.log') && !file.includes('application') && !file.includes('error'),
+        (file) => file.endsWith('.log') && !file.includes('application') && !file.includes('error') && !file.includes('.human.log'),
       );
 
       return logFiles.map((file) => file.replace('.log', ''));

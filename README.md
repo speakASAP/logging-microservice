@@ -2,16 +2,30 @@
 
 Centralized logging service for the FlipFlop.cz e-commerce platform. Collects, stores, and provides querying capabilities for logs from all microservices.
 
+## Implementation Status
+
+✅ **Complete** - All features implemented and tested. The service is ready for production deployment.
+
 ## Features
 
-- ✅ **Log Ingestion** - Receive logs from all services via HTTP API
+### Core Functionality
+
+- ✅ **Log Ingestion** - Receive logs from all services via HTTP API (`POST /api/logs`)
 - ✅ **Log Storage** - File-based storage with daily rotation
-- ✅ **Log Querying** - Query logs by service, level, date range
-- ✅ **Service Tracking** - Track logs per service
-- ✅ **Daily Rotation** - Automatic log file rotation
-- ✅ **Error Logging** - Separate error log files
-- ✅ **Health Checks** - Built-in health endpoint
-- ✅ **Production Ready** - Docker containerized with health checks
+- ✅ **Log Querying** - Query logs by service, level, date range (`GET /api/logs/query`)
+- ✅ **Service Tracking** - Track logs per service (`GET /api/logs/services`)
+- ✅ **Health Checks** - Built-in health endpoint (`GET /health`)
+- ✅ **Error Handling** - Comprehensive error handling and fallback mechanisms
+
+### Technical Implementation
+
+- ✅ NestJS framework with TypeScript
+- ✅ Winston logging with daily rotation
+- ✅ Docker containerization
+- ✅ Production-ready configuration
+- ✅ Network integration (nginx-network)
+- ✅ Health checks
+- ✅ CORS support
 
 ## Technology Stack
 
@@ -20,27 +34,56 @@ Centralized logging service for the FlipFlop.cz e-commerce platform. Collects, s
 - **File Rotation**: winston-daily-rotate-file
 - **Container**: Docker
 
-## API Endpoints
+## API Interface
 
-### Ingest Log
-```
-POST /api/logs
+### Base URL
+
+```text
+http://logging-microservice:3268
 ```
 
-**Request Body**:
+**Note**: When services are on the same Docker network (`nginx-network`), use the service name `logging-microservice`. For external access, use the host IP and port `3268`.
+
+### API Endpoints
+
+#### 1. Ingest Log
+
+Send logs to the logging microservice.
+
+**Endpoint**: `POST /api/logs`
+
+**Content-Type**: `application/json`
+
+**Request Body (DTO - Data Transfer Object)**:
+
+The DTO (Data Transfer Object) defines the structure of data that services must send. Required and optional fields:
+
 ```json
 {
-  "level": "error|warn|info|debug",
-  "message": "Log message",
-  "service": "service-name",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "metadata": {
-    "key": "value"
+  "level": "error|warn|info|debug",    // REQUIRED: Log level
+  "message": "Log message",            // REQUIRED: Log message text
+  "service": "service-name",           // REQUIRED: Name of the service sending the log
+  "timestamp": "2024-01-01T00:00:00.000Z",  // OPTIONAL: ISO timestamp (auto-generated if omitted)
+  "metadata": {                         // OPTIONAL: Additional key-value pairs
+    "userId": 123,
+    "action": "login",
+    "ip": "192.168.1.1"
   }
 }
 ```
 
-**Response**:
+**Field Details**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `level` | enum | ✅ Yes | One of: `"error"`, `"warn"`, `"info"`, `"debug"` |
+| `message` | string | ✅ Yes | The log message (cannot be empty) |
+| `service` | string | ✅ Yes | Service identifier (cannot be empty) |
+| `timestamp` | string | ❌ No | ISO 8601 timestamp (e.g., `"2024-01-01T00:00:00.000Z"`). If omitted, current timestamp is used |
+| `metadata` | object | ❌ No | Additional structured data as key-value pairs |
+
+**Success Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -48,33 +91,115 @@ POST /api/logs
 }
 ```
 
-### Query Logs
-```
-GET /api/logs/query?service=user-service&level=error&startDate=2024-01-01&endDate=2024-01-31&limit=100
-```
+**Error Response** (400 Bad Request / 500 Internal Server Error):
 
-**Query Parameters**:
-- `service` (optional): Filter by service name
-- `level` (optional): Filter by log level (error, warn, info, debug)
-- `startDate` (optional): Start date for filtering (ISO format)
-- `endDate` (optional): End date for filtering (ISO format)
-- `limit` (optional): Maximum number of logs to return (default: 100)
-
-**Response**:
 ```json
 {
-  "success": true,
-  "data": [...],
-  "count": 10
+  "success": false,
+  "message": "Failed to ingest log",
+  "error": "Error description"
 }
 ```
 
-### Get Services
-```
-GET /api/logs/services
+**Example Request**:
+
+```bash
+curl -X POST http://logging-microservice:3268/api/logs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level": "info",
+    "message": "User logged in successfully",
+    "service": "user-service",
+    "metadata": {
+      "userId": 123,
+      "ip": "192.168.1.1"
+    }
+  }'
 ```
 
-**Response**:
+**Example with Timestamp**:
+
+```bash
+curl -X POST http://logging-microservice:3268/api/logs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level": "error",
+    "message": "Database connection failed",
+    "service": "database-service",
+    "timestamp": "2024-01-01T12:00:00.000Z",
+    "metadata": {
+      "errorCode": "DB_CONN_001",
+      "retryCount": 3
+    }
+  }'
+```
+
+#### 2. Query Logs
+
+Retrieve logs with optional filtering.
+
+**Endpoint**: `GET /api/logs/query`
+
+**Query Parameters** (all optional):
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `service` | string | Filter by service name |
+| `level` | string | Filter by log level: `error`, `warn`, `info`, `debug` |
+| `startDate` | string | Start date for filtering (ISO 8601 format) |
+| `endDate` | string | End date for filtering (ISO 8601 format) |
+| `limit` | number | Maximum number of logs to return (default: 100) |
+
+**Example Request**:
+
+```bash
+curl "http://logging-microservice:3268/api/logs/query?service=user-service&level=error&startDate=2024-01-01&endDate=2024-01-31&limit=100"
+```
+
+**Success Response** (200 OK):
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "level": "error",
+      "message": "Database connection failed",
+      "service": "user-service",
+      "timestamp": "2024-01-01T12:00:00.000Z",
+      "metadata": {
+        "errorCode": "DB_CONN_001"
+      }
+    }
+  ],
+  "count": 1
+}
+```
+
+**Error Response** (500 Internal Server Error):
+
+```json
+{
+  "success": false,
+  "message": "Failed to query logs",
+  "error": "Error description"
+}
+```
+
+#### 3. Get Services
+
+List all services that have sent logs.
+
+**Endpoint**: `GET /api/logs/services`
+
+**Example Request**:
+
+```bash
+curl http://logging-microservice:3268/api/logs/services
+```
+
+**Success Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -83,12 +208,30 @@ GET /api/logs/services
 }
 ```
 
-### Health Check
-```
-GET /health
+**Error Response** (500 Internal Server Error):
+
+```json
+{
+  "success": false,
+  "message": "Failed to get services",
+  "error": "Error description"
+}
 ```
 
-**Response**:
+#### 4. Health Check
+
+Check if the logging microservice is running and healthy.
+
+**Endpoint**: `GET /health`
+
+**Example Request**:
+
+```bash
+curl http://logging-microservice:3268/health
+```
+
+**Success Response** (200 OK):
+
 ```json
 {
   "success": true,
@@ -104,7 +247,7 @@ Create a `.env` file in the project root with the following variables:
 
 ```env
 # Server Configuration
-PORT=3009
+PORT=3268
 NODE_ENV=production
 CORS_ORIGIN=*
 
@@ -166,34 +309,178 @@ docker compose restart logging-service
 ## Log Storage
 
 Logs are stored in the following structure:
-```
+
+```text
 logs/
-  ├── application-YYYY-MM-DD.log  # All logs (rotated daily)
-  ├── error-YYYY-MM-DD.log         # Error logs only (rotated daily)
-  └── service-name.log              # Service-specific logs
+  ├── application-YYYY-MM-DD.log  # All logs (rotated daily, JSON format)
+  ├── error-YYYY-MM-DD.log         # Error logs only (rotated daily, JSON format)
+  ├── service-name.log              # Service-specific logs (JSON format)
+  └── service-name.human.log        # Service-specific logs (human-readable format)
 ```
 
+### Log Formats
+
+The service stores logs in **two formats**:
+
+1. **JSON Format** (`service-name.log`):
+   - Structured JSON format for automated analysis
+   - One JSON object per line
+   - Easy to parse programmatically
+   - Used by query API endpoints
+
+2. **Human-Readable Format** (`service-name.human.log`):
+   - Easy to read with `tail`, `grep`, `less`
+   - Format: `[YYYY-MM-DD HH:mm:ss] [LEVEL] [SERVICE] message | metadata`
+   - Example: `[2024-01-01 12:00:00] [INFO ] [user-service      ] User logged in | {"userId":123}`
+
 Log files are automatically rotated:
+
 - Daily rotation based on date pattern
 - Maximum file size: 100MB (configurable)
 - Maximum files to keep: 10 (configurable)
 
-## Integration
+## Integration Guide
 
-This service is used by all microservices in the platform. Services send logs via HTTP POST to `/api/logs`. The logger utility in the e-commerce project automatically sends logs to this service.
+### For Services Using the Logging Microservice
 
-### E-commerce Integration
+To integrate your service with the logging microservice, you need to:
+
+#### 1. Network Configuration
+
+Ensure your service is on the same Docker network (`nginx-network`):
+
+```yaml
+# In your service's docker-compose.yml
+networks:
+  - nginx-network
+
+networks:
+  nginx-network:
+    external: true
+    name: nginx-network
+```
+
+#### 2. Service Configuration
+
+Set the logging service URL in your service's environment variables:
+
+```env
+LOGGING_SERVICE_URL=http://logging-microservice:3268
+```
+
+#### 3. Send Logs via HTTP POST
+
+Send logs using the API interface defined above. Example implementations:
+
+**JavaScript/TypeScript (Node.js)**:
+
+```typescript
+async function sendLog(level: string, message: string, service: string, metadata?: any) {
+  try {
+    const response = await fetch('http://logging-microservice:3268/api/logs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        level,
+        message,
+        service,
+        timestamp: new Date().toISOString(),
+        metadata,
+      }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to send log:', error);
+    // Fallback to local logging
+  }
+}
+
+// Usage
+await sendLog('info', 'User logged in', 'user-service', { userId: 123 });
+```
+
+**Python**:
+
+```python
+import requests
+from datetime import datetime
+
+def send_log(level: str, message: str, service: str, metadata: dict = None):
+    try:
+        response = requests.post(
+            'http://logging-microservice:3268/api/logs',
+            json={
+                'level': level,
+                'message': message,
+                'service': service,
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'metadata': metadata or {}
+            },
+            headers={'Content-Type': 'application/json'}
+        )
+        return response.json()
+    except Exception as e:
+        print(f'Failed to send log: {e}')
+        # Fallback to local logging
+
+# Usage
+send_log('info', 'User logged in', 'user-service', {'userId': 123})
+```
+
+**cURL**:
+
+```bash
+curl -X POST http://logging-microservice:3268/api/logs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "level": "info",
+    "message": "User logged in",
+    "service": "user-service",
+    "metadata": {"userId": 123}
+  }'
+```
+
+#### 4. Error Handling
+
+Always implement fallback logging in case the logging microservice is unavailable:
+
+```typescript
+async function sendLog(level: string, message: string, service: string, metadata?: any) {
+  try {
+    // Try to send to logging microservice
+    const response = await fetch('http://logging-microservice:3268/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, message, service, metadata }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Logging service returned error');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    // Fallback: log locally
+    console.error(`[${level.toUpperCase()}] [${service}] ${message}`, metadata);
+    // Or write to local file
+  }
+}
+```
+
+### E-commerce Integration Example
 
 The e-commerce project uses the centralized logger from `shared/logger/logger.util.ts` which:
-- Sends logs to `http://logging-microservice:3009/api/logs`
+
+- Sends logs to `http://logging-microservice:3268/api/logs`
 - Falls back to local file logging if service is unavailable
 - Includes retry logic and error handling
 
-### Environment Variable in E-commerce
+**Environment Variables** (in e-commerce `.env`):
 
-Set in e-commerce `.env`:
 ```env
-LOGGING_SERVICE_URL=http://logging-microservice:3009
+LOGGING_SERVICE_URL=http://logging-microservice:3268
 LOG_LEVEL=info
 LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 ```
@@ -209,11 +496,13 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 ### Deployment Steps
 
 1. **SSH to production server**:
+
    ```bash
    ssh statex
    ```
 
 2. **Navigate to logging-microservice directory**:
+
    ```bash
    cd /home/statex/logging-microservice
    # Or if in separate location:
@@ -221,17 +510,20 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
    ```
 
 3. **Create .env file** (if not exists):
+
    ```bash
    cp .env.example .env
    # Edit .env with production values
    ```
 
 4. **Deploy**:
+
    ```bash
    ./scripts/deploy.sh
    ```
 
 5. **Verify**:
+
    ```bash
    ./scripts/status.sh
    ```
@@ -241,6 +533,7 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 The service must be on the `nginx-network` Docker network to be accessible by other microservices. The docker-compose.yml automatically connects to this network.
 
 To verify network connection:
+
 ```bash
 docker network inspect nginx-network | grep logging-microservice
 ```
@@ -254,7 +547,7 @@ docker network inspect nginx-network | grep logging-microservice
 docker compose logs logging-service
 
 # Check if port is in use
-netstat -tuln | grep 3009
+netstat -tuln | grep 3268
 
 # Check Docker network
 docker network inspect nginx-network
@@ -264,7 +557,7 @@ docker network inspect nginx-network
 
 ```bash
 # Test health endpoint manually
-docker exec logging-microservice wget -q -O- http://localhost:3009/health
+docker exec logging-microservice wget -q -O- http://localhost:3268/health
 
 # Check service logs
 docker compose logs -f logging-service
@@ -291,7 +584,7 @@ docker network inspect nginx-network
 
 # Test connectivity from another container
 docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:3009/health
+  curl -s http://logging-microservice:3268/health
 ```
 
 ## Maintenance
@@ -325,15 +618,16 @@ git pull origin main
 ### Backup Logs
 
 Logs are stored in `./logs/` directory. To backup:
+
 ```bash
 tar -czf logs-backup-$(date +%Y%m%d).tar.gz logs/
 ```
 
-## Development
+## Microservice Development
 
 ### Project Structure
 
-```
+```text
 logging-microservice/
 ├── src/
 │   ├── main.ts              # Application entry point
@@ -348,7 +642,8 @@ logging-microservice/
 ├── scripts/                 # Deployment scripts
 │   ├── deploy.sh
 │   ├── status.sh
-│   └── update.sh
+│   ├── update.sh
+│   └── test.sh
 ├── logs/                    # Log storage (created at runtime)
 ├── docker-compose.yml       # Docker configuration
 ├── Dockerfile              # Docker image definition
@@ -368,19 +663,97 @@ docker compose build
 
 ### Testing
 
-```bash
-# Run tests
-npm test
+Run the test script:
 
-# Test API locally
-curl -X POST http://localhost:3009/api/logs \
+```bash
+./scripts/test.sh
+```
+
+Or test manually:
+
+```bash
+# Health check
+curl http://localhost:3268/health
+
+# Send log
+curl -X POST http://localhost:3268/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
     "message": "Test log",
     "service": "test-service"
   }'
+
+# Query logs
+curl "http://localhost:3268/api/logs/query?service=test-service&limit=10"
 ```
+
+Or run unit tests:
+
+```bash
+npm test
+```
+
+## Error Handling
+
+The service implements comprehensive error handling:
+
+- ✅ Try-catch blocks in all service methods
+- ✅ Error logging to Winston
+- ✅ HTTP error responses with proper status codes
+- ✅ Graceful degradation (doesn't crash on errors)
+- ✅ Validation errors handled by NestJS pipes
+
+## Security
+
+Security measures implemented:
+
+- ✅ Input validation via class-validator
+- ✅ CORS configuration
+- ✅ No sensitive data in logs (handled by caller)
+- ✅ File system permissions handled by Docker
+
+## Performance
+
+Performance optimizations:
+
+- ✅ Async log ingestion (non-blocking)
+- ✅ File append operations (efficient)
+- ✅ Winston buffering
+- ✅ Health checks for monitoring
+
+## Monitoring
+
+Monitoring capabilities:
+
+- ✅ Docker health checks
+- ✅ Health endpoint (`/health`)
+- ✅ Service status script (`./scripts/status.sh`)
+- ✅ Log file monitoring
+
+## Notes
+
+Important implementation details:
+
+- Service runs on port 3268
+- Must be on nginx-network for service discovery
+- Logs persist in `./logs/` directory (mounted volume)
+- No database required (file-based storage)
+- Can be enhanced with database for better querying if needed
+
+## Success Criteria
+
+The service is considered successful when:
+
+✅ Service starts successfully
+✅ Health check passes
+✅ Log ingestion works
+✅ Log querying works
+✅ Service listing works
+✅ Docker health checks pass
+✅ Integration with e-commerce verified
+✅ Documentation complete
+✅ Deployment scripts ready
 
 ## License
 

@@ -18,7 +18,7 @@ if docker ps --format '{{.Names}}' | grep -q "^logging-microservice$"; then
   echo "✅ Container is running"
   
   # Check health
-  if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3009/health 2>/dev/null; then
+  if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3268/health 2>/dev/null; then
     echo "✅ Health check passed"
   else
     echo "⚠️  Health check failed"

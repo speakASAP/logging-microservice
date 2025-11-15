@@ -30,6 +30,8 @@ logs/*.log
 logs/*.gz
 logs/*.tar
 logs/*.zip
+logs/*.human.log
+logs/*.json
 !logs/.gitkeep
 
 # Testing

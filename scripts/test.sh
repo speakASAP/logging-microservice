@@ -10,7 +10,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_DIR"
 
-SERVICE_URL="${1:-http://localhost:3009}"
+SERVICE_URL="${1:-http://localhost:3268}"
 
 echo "=========================================="
 echo "Testing Logging Microservice"

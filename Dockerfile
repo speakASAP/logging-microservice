@@ -30,7 +30,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 
 # Expose port
-EXPOSE 3009
+EXPOSE 3268
 
 # Start application
 CMD ["node", "dist/main"]

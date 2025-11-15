@@ -7,6 +7,7 @@ This guide covers deploying the logging microservice to production on the statex
 ## Prerequisites
 
 1. **Access to Production Server**:
+
    ```bash
    ssh statex
    ```
@@ -56,7 +57,7 @@ Required environment variables:
 
 ```env
 # Server Configuration
-PORT=3009
+PORT=3268
 NODE_ENV=production
 CORS_ORIGIN=*
 
@@ -94,6 +95,7 @@ cd /home/statex/logging-microservice
 ```
 
 The deployment script will:
+
 - Check for .env file
 - Verify nginx-network exists
 - Create logs directory
@@ -108,11 +110,11 @@ The deployment script will:
 ./scripts/status.sh
 
 # Test health endpoint
-curl http://localhost:3009/health
+curl http://localhost:3268/health
 
 # Test from another container
 docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:3009/health
+  curl -s http://logging-microservice:3268/health
 ```
 
 ## Updating the Service
@@ -190,8 +192,9 @@ The e-commerce services automatically connect to the logging microservice when:
 
 1. **Logging microservice is running** on nginx-network
 2. **Environment variable is set** in e-commerce `.env`:
+
    ```env
-   LOGGING_SERVICE_URL=http://logging-microservice:3009
+   LOGGING_SERVICE_URL=http://logging-microservice:3268
    ```
 
 ### Verify Integration
@@ -200,10 +203,10 @@ From an e-commerce service container:
 
 ```bash
 # Test connectivity
-docker exec e-commerce-api-gateway curl -s http://logging-microservice:3009/health
+docker exec e-commerce-api-gateway curl -s http://logging-microservice:3268/health
 
 # Test log ingestion
-docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:3009/api/logs \
+docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:3268/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -219,7 +222,7 @@ docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:3009
 The service includes a health check endpoint:
 
 ```bash
-curl http://localhost:3009/health
+curl http://localhost:3268/health
 ```
 
 Docker also performs automatic health checks (configured in docker-compose.yml).
@@ -246,16 +249,19 @@ df -h
 ### Service Won't Start
 
 1. **Check logs**:
+
    ```bash
    docker compose logs logging-service
    ```
 
 2. **Check port availability**:
+
    ```bash
-   netstat -tuln | grep 3009
+   netstat -tuln | grep 3268
    ```
 
 3. **Check Docker network**:
+
    ```bash
    docker network inspect nginx-network
    ```
@@ -263,16 +269,19 @@ df -h
 ### Health Check Failing
 
 1. **Test manually**:
+
    ```bash
-   docker exec logging-microservice wget -q -O- http://localhost:3009/health
+   docker exec logging-microservice wget -q -O- http://localhost:3268/health
    ```
 
 2. **Check service logs**:
+
    ```bash
    docker compose logs logging-service | tail -50
    ```
 
 3. **Restart service**:
+
    ```bash
    docker compose restart logging-service
    ```
@@ -280,16 +289,19 @@ df -h
 ### Logs Not Being Stored
 
 1. **Check directory permissions**:
+
    ```bash
    ls -la logs/
    ```
 
 2. **Check disk space**:
+
    ```bash
    df -h
    ```
 
 3. **Check service logs for errors**:
+
    ```bash
    docker compose logs logging-service | grep -i error
    ```
@@ -297,17 +309,20 @@ df -h
 ### Network Connectivity Issues
 
 1. **Verify service is on network**:
+
    ```bash
    docker network inspect nginx-network | grep logging-microservice
    ```
 
 2. **Test from another container**:
+
    ```bash
    docker run --rm --network nginx-network alpine/curl:latest \
-     curl -s http://logging-microservice:3009/health
+     curl -s http://logging-microservice:3268/health
    ```
 
 3. **Reconnect to network**:
+
    ```bash
    docker network connect nginx-network logging-microservice
    ```
@@ -335,11 +350,13 @@ find logs/ -name "*.gz" -mtime +30 -delete
 ### Log Rotation
 
 Log rotation is handled automatically by winston-daily-rotate-file:
+
 - Daily rotation based on date pattern
 - Maximum file size: 100MB (configurable)
 - Maximum files to keep: 10 (configurable)
 
 Configure in `.env`:
+
 ```env
 LOG_ROTATION_MAX_SIZE=100m
 LOG_ROTATION_MAX_FILES=10
@@ -387,8 +404,8 @@ docker compose down
 ## Support
 
 For issues:
+
 1. Check service logs: `docker compose logs logging-service`
 2. Check application logs: `tail -f logs/application-*.log`
 3. Verify network: `docker network inspect nginx-network`
-4. Test health: `curl http://localhost:3009/health`
-
+4. Test health: `curl http://localhost:3268/health`
