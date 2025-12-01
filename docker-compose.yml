@@ -18,7 +18,7 @@ services:
       - LOG_ROTATION_MAX_FILES=${LOG_ROTATION_MAX_FILES:-10}
       - LOG_TIMESTAMP_FORMAT=${LOG_TIMESTAMP_FORMAT:-YYYY-MM-DD HH:mm:ss}
     volumes:
-      - ./logs:/app/logs
+      - /srv/storagebox/statex/docker-volumes/logging-microservice/logs:/app/logs
     networks:
       - nginx-network
     restart: unless-stopped
