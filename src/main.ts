@@ -29,7 +29,7 @@ async function bootstrap() {
       }),
     );
 
-    const port = process.env.PORT || 3268;
+    const port = parseInt(process.env.PORT || '3367', 10);
     const nodeEnv = process.env.NODE_ENV || 'development';
     const logStoragePath = process.env.LOG_STORAGE_PATH || './logs';
 
