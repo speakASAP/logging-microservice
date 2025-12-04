@@ -5,12 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: logging-microservice
     ports:
-      - "${PORT:-3268}:3268"
+      - "${PORT:-3367}:${PORT:-3367}"
     env_file:
       - .env
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=${PORT:-3268}
+      - PORT=${PORT:-3367}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_STORAGE_PATH=/app/logs
@@ -23,7 +23,7 @@ services:
       - nginx-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3268/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${PORT:-3367}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

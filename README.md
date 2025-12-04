@@ -36,12 +36,26 @@ Centralized logging service for the FlipFlop.cz e-commerce platform. Collects, s
 
 ## API Interface
 
+## 🔌 Port Configuration
+
+**Port Range**: 33xx (shared microservices)
+
+| Service | Host Port | Container Port | .env Variable | Description |
+|---------|-----------|----------------|---------------|-------------|
+| **Logging Service** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (logging-microservice/.env) | Centralized logging service |
+
+**Note**:
+
+- All ports are configured in `logging-microservice/.env`. The values shown are defaults.
+- All ports are exposed on `127.0.0.1` only (localhost) for security
+- External access is provided via nginx-microservice reverse proxy at `https://logging.statex.cz`
+
 ### Base URLs
 
 **Internal Access** (Docker network):
 
 ```text
-http://logging-microservice:3268
+http://logging-microservice:${PORT:-3367}
 ```
 
 **External Access** (via HTTPS):
@@ -52,7 +66,7 @@ https://logging.statex.cz
 
 **Note**:
 
-- For services on the same Docker network (`nginx-network`), use the internal URL: `http://logging-microservice:3268`
+- For services on the same Docker network (`nginx-network`), use the internal URL: `http://logging-microservice:${PORT:-3367}` (port configured in `logging-microservice/.env`)
 - For external/public access, use: `https://logging.statex.cz`
 - The external URL is managed by nginx-microservice with automatic SSL certificate management
 
@@ -116,7 +130,8 @@ The DTO (Data Transfer Object) defines the structure of data that services must 
 **Example Request**:
 
 ```bash
-curl -X POST http://logging-microservice:3268/api/logs \
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -132,7 +147,8 @@ curl -X POST http://logging-microservice:3268/api/logs \
 **Example with Timestamp**:
 
 ```bash
-curl -X POST http://logging-microservice:3268/api/logs \
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "error",
@@ -165,7 +181,8 @@ Retrieve logs with optional filtering.
 **Example Request**:
 
 ```bash
-curl "http://logging-microservice:3268/api/logs/query?service=user-service&level=error&startDate=2024-01-01&endDate=2024-01-31&limit=100"
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl "http://logging-microservice:${PORT:-3367}/api/logs/query?service=user-service&level=error&startDate=2024-01-01&endDate=2024-01-31&limit=100"
 ```
 
 **Success Response** (200 OK):
@@ -207,7 +224,8 @@ List all services that have sent logs.
 **Example Request**:
 
 ```bash
-curl http://logging-microservice:3268/api/logs/services
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl http://logging-microservice:${PORT:-3367}/api/logs/services
 ```
 
 **Success Response** (200 OK):
@@ -239,7 +257,8 @@ Check if the logging microservice is running and healthy.
 **Example Request**:
 
 ```bash
-curl http://logging-microservice:3268/health
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl http://logging-microservice:${PORT:-3367}/health
 ```
 
 **Success Response** (200 OK):
@@ -259,7 +278,7 @@ Create a `.env` file in the project root with the following variables:
 
 ```env
 # Server Configuration
-PORT=3268
+PORT=3367  # Configured in logging-microservice/.env (default: 3367)
 NODE_ENV=production
 CORS_ORIGIN=*
 
@@ -377,7 +396,7 @@ networks:
 Set the logging service URL in your service's environment variables:
 
 ```env
-LOGGING_SERVICE_URL=http://logging-microservice:3268
+LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
 ```
 
 #### 3. Send Logs via HTTP POST
@@ -389,7 +408,8 @@ Send logs using the API interface defined above. Example implementations:
 ```typescript
 async function sendLog(level: string, message: string, service: string, metadata?: any) {
   try {
-    const response = await fetch('http://logging-microservice:3268/api/logs', {
+    // Port configured in logging-microservice/.env: PORT (default: 3367)
+    const response = await fetch('http://logging-microservice:${PORT:-3367}/api/logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -422,7 +442,7 @@ from datetime import datetime
 def send_log(level: str, message: str, service: str, metadata: dict = None):
     try:
         response = requests.post(
-            'http://logging-microservice:3268/api/logs',
+            'http://logging-microservice:${PORT:-3367}/api/logs',  # PORT configured in logging-microservice/.env
             json={
                 'level': level,
                 'message': message,
@@ -444,7 +464,8 @@ send_log('info', 'User logged in', 'user-service', {'userId': 123})
 **cURL**:
 
 ```bash
-curl -X POST http://logging-microservice:3268/api/logs \
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -462,7 +483,8 @@ Always implement fallback logging in case the logging microservice is unavailabl
 async function sendLog(level: string, message: string, service: string, metadata?: any) {
   try {
     // Try to send to logging microservice
-    const response = await fetch('http://logging-microservice:3268/api/logs', {
+    // Port configured in logging-microservice/.env: PORT (default: 3367)
+    const response = await fetch('http://logging-microservice:${PORT:-3367}/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ level, message, service, metadata }),
@@ -485,19 +507,19 @@ async function sendLog(level: string, message: string, service: string, metadata
 
 The e-commerce project uses the centralized logger from `shared/logger/logger.util.ts` which:
 
-- Sends logs to `http://logging-microservice:3268/api/logs` (internal network)
+- Sends logs to `http://logging-microservice:${PORT:-3367}/api/logs` (internal network, port configured in `logging-microservice/.env`)
 - Falls back to local file logging if service is unavailable
 - Includes retry logic and error handling
 
 **Environment Variables** (in e-commerce `.env`):
 
 ```env
-LOGGING_SERVICE_URL=http://logging-microservice:3268
+LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
 LOG_LEVEL=info
 LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 ```
 
-**Note**: Use the internal Docker network URL (`http://logging-microservice:3268`) for services on the same Docker network. For external access, use `https://logging.statex.cz`.
+**Note**: Use the internal Docker network URL (`http://logging-microservice:${PORT:-3367}`, port configured in `logging-microservice/.env`) for services on the same Docker network. For external access, use `https://logging.statex.cz`.
 
 ## Production Deployment
 
@@ -525,7 +547,7 @@ Ensure `.env` file exists with production values:
 ```bash
 cd /home/statex/logging-microservice
 cat .env  # Verify configuration
-# PORT should be 3268
+# PORT should be set (default: 3367, configured in logging-microservice/.env)
 ```
 
 #### Step 3: Deploy Service
@@ -538,7 +560,7 @@ cd /home/statex/logging-microservice
 This will:
 
 - Build Docker image
-- Start the service on port 3268
+- Start the service on port ${PORT:-3367} (configured in `logging-microservice/.env`)
 - Connect to nginx-network
 - Run health checks
 
@@ -555,7 +577,8 @@ The service needs to be registered in nginx-microservice for external access:
    ```bash
    ssh statex
    cd /home/statex/nginx-microservice
-   ./scripts/add-domain.sh logging.statex.cz logging-microservice 3268 admin@statex.cz
+   # Port configured in logging-microservice/.env: PORT (default: 3367)
+   ./scripts/add-domain.sh logging.statex.cz logging-microservice ${PORT:-3367} admin@statex.cz
    ```
 
    This will:
@@ -581,8 +604,9 @@ cd /home/statex/logging-microservice
 ./scripts/status.sh
 
 # Test internal access
+# Port configured in logging-microservice/.env: PORT (default: 3367)
 docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:3268/health
+  curl -s http://logging-microservice:${PORT:-3367}/health
 
 # Test external access
 curl https://logging.statex.cz/health
@@ -593,7 +617,7 @@ curl https://logging.statex.cz/health
 The service is accessible via:
 
 1. **Internal Access** (within Docker network):
-   - URL: `http://logging-microservice:3268`
+   - URL: `http://logging-microservice:${PORT:-3367}` (port configured in `logging-microservice/.env`)
    - Used by other microservices on the same network
    - No SSL required (internal network)
 
@@ -625,7 +649,7 @@ The registry contains:
 - Service name and paths
 - Container configuration
 - Health check endpoints
-- Port configuration (3268)
+- Port configuration (${PORT:-3367}, configured in `logging-microservice/.env`)
 
 ### Blue/Green Deployment
 
@@ -654,7 +678,8 @@ See [nginx-microservice Blue/Green Deployment Guide](https://github.com/speakASA
 docker compose logs logging-service
 
 # Check if port is in use
-netstat -tuln | grep 3268
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+netstat -tuln | grep ${PORT:-3367}
 
 # Check Docker network
 docker network inspect nginx-network
@@ -664,7 +689,8 @@ docker network inspect nginx-network
 
 ```bash
 # Test health endpoint manually
-docker exec logging-microservice wget -q -O- http://localhost:3268/health
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+docker exec logging-microservice wget -q -O- http://localhost:${PORT:-3367}/health
 
 # Check service logs
 docker compose logs -f logging-service
@@ -690,8 +716,9 @@ docker compose logs logging-service | grep -i error
 docker network inspect nginx-network
 
 # Test connectivity from another container
+# Port configured in logging-microservice/.env: PORT (default: 3367)
 docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:3268/health
+  curl -s http://logging-microservice:${PORT:-3367}/health
 ```
 
 ## Maintenance
@@ -780,10 +807,12 @@ Or test manually:
 
 ```bash
 # Health check
-curl http://localhost:3268/health
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl http://localhost:${PORT:-3367}/health
 
 # Send log
-curl -X POST http://localhost:3268/api/logs \
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl -X POST http://localhost:${PORT:-3367}/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -792,7 +821,8 @@ curl -X POST http://localhost:3268/api/logs \
   }'
 
 # Query logs
-curl "http://localhost:3268/api/logs/query?service=test-service&limit=10"
+# Port configured in logging-microservice/.env: PORT (default: 3367)
+curl "http://localhost:${PORT:-3367}/api/logs/query?service=test-service&limit=10"
 ```
 
 Or run unit tests:
@@ -842,13 +872,13 @@ Monitoring capabilities:
 
 Important implementation details:
 
-- **Port**: Service runs on port 3268 (both container and host)
+- **Port**: Service runs on port `${PORT:-3367}` (both container and host, configured in `logging-microservice/.env`)
 - **Network**: Must be on nginx-network for service discovery
 - **Log Storage**: Logs persist in `./logs/` directory (mounted volume on host filesystem)
 - **Storage Format**: Dual format - JSON (`{service}.log`) and human-readable (`{service}.human.log`)
 - **Database**: No database required (file-based storage)
 - **External Access**: Available via `https://logging.statex.cz` (managed by nginx-microservice)
-- **Internal Access**: Available via `http://logging-microservice:3268` (Docker network)
+- **Internal Access**: Available via `http://logging-microservice:${PORT:-3367}` (Docker network, port configured in `logging-microservice/.env`)
 - **SSL Certificates**: Managed automatically by nginx-microservice via Let's Encrypt
 - **Future Enhancement**: Can be enhanced with database for better querying if needed
 

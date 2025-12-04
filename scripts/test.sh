@@ -10,7 +10,8 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$PROJECT_DIR"
 
-SERVICE_URL="${1:-http://localhost:3268}"
+PORT=${PORT:-3367}
+SERVICE_URL="${1:-http://localhost:${PORT}}"
 
 echo "=========================================="
 echo "Testing Logging Microservice"

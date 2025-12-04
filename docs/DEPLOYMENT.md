@@ -57,7 +57,7 @@ Required environment variables:
 
 ```env
 # Server Configuration
-PORT=3268
+PORT=3367  # Configured in logging-microservice/.env (default: 3367)
 NODE_ENV=production
 CORS_ORIGIN=*
 
@@ -110,11 +110,12 @@ The deployment script will:
 ./scripts/status.sh
 
 # Test health endpoint
-curl http://localhost:3268/health
+curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
 
 # Test from another container
+# Port configured in logging-microservice/.env: PORT (default: 3367)
 docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:3268/health
+  curl -s http://logging-microservice:${PORT:-3367}/health
 ```
 
 ## Updating the Service
@@ -194,7 +195,7 @@ The e-commerce services automatically connect to the logging microservice when:
 2. **Environment variable is set** in e-commerce `.env`:
 
    ```env
-   LOGGING_SERVICE_URL=http://logging-microservice:3268
+   LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
    ```
 
 ### Verify Integration
@@ -203,10 +204,10 @@ From an e-commerce service container:
 
 ```bash
 # Test connectivity
-docker exec e-commerce-api-gateway curl -s http://logging-microservice:3268/health
+docker exec e-commerce-api-gateway curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
 
 # Test log ingestion
-docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:3268/api/logs \
+docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \  # PORT configured in logging-microservice/.env
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -222,7 +223,7 @@ docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:3268
 The service includes a health check endpoint:
 
 ```bash
-curl http://localhost:3268/health
+curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
 ```
 
 Docker also performs automatic health checks (configured in docker-compose.yml).
@@ -257,7 +258,7 @@ df -h
 2. **Check port availability**:
 
    ```bash
-   netstat -tuln | grep 3268
+   netstat -tuln | grep ${PORT:-3367}  # PORT configured in logging-microservice/.env
    ```
 
 3. **Check Docker network**:
@@ -271,7 +272,7 @@ df -h
 1. **Test manually**:
 
    ```bash
-   docker exec logging-microservice wget -q -O- http://localhost:3268/health
+     docker exec logging-microservice wget -q -O- http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
    ```
 
 2. **Check service logs**:
@@ -318,7 +319,7 @@ df -h
 
    ```bash
    docker run --rm --network nginx-network alpine/curl:latest \
-     curl -s http://logging-microservice:3268/health
+     curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
    ```
 
 3. **Reconnect to network**:
@@ -408,4 +409,4 @@ For issues:
 1. Check service logs: `docker compose logs logging-service`
 2. Check application logs: `tail -f logs/application-*.log`
 3. Verify network: `docker network inspect nginx-network`
-4. Test health: `curl http://localhost:3268/health`
+4. Test health: `curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env`

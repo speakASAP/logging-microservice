@@ -33,8 +33,14 @@ docker compose up -d
 echo "Waiting for service to be healthy..."
 sleep 5
 
+# Load PORT from .env if available
+if [ -f .env ]; then
+  source .env
+fi
+PORT=${PORT:-3367}
+
 # Check health
-if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3268/health 2>/dev/null; then
+if docker compose exec -T logging-service wget --quiet --tries=1 --spider "http://localhost:${PORT}/health" 2>/dev/null; then
   echo "✅ Update complete - service is healthy"
 else
   echo "⚠️  Health check failed, but service may still be starting..."

@@ -53,8 +53,14 @@ docker compose up -d
 echo "Waiting for service to be healthy..."
 sleep 5
 
+# Load PORT from .env if available
+if [ -f .env ]; then
+  source .env
+fi
+PORT=${PORT:-3367}
+
 # Check health
-if docker compose exec -T logging-service wget --quiet --tries=1 --spider http://localhost:3268/health 2>/dev/null; then
+if docker compose exec -T logging-service wget --quiet --tries=1 --spider "http://localhost:${PORT}/health" 2>/dev/null; then
   echo "✅ Logging microservice is healthy"
 else
   echo "⚠️  Health check failed, but service may still be starting..."
@@ -67,7 +73,7 @@ echo "=========================================="
 echo "Deployment Complete"
 echo "=========================================="
 echo "Service: logging-microservice"
-echo "Port: 3268"
+echo "Port: ${PORT} (configured in logging-microservice/.env)"
 echo "Network: nginx-network"
 echo ""
 echo "Useful commands:"
