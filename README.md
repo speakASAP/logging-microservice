@@ -537,7 +537,7 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 ```bash
 ssh statex
 cd /home/statex/logging-microservice
-git pull origin master
+git pull origin main
 ```
 
 #### Step 2: Configure Environment
