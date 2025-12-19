@@ -187,12 +187,12 @@ tail -f logs/error-$(date +%Y-%m-%d).log
 ./scripts/status.sh
 ```
 
-## Integration with E-commerce
+## Integration with flipflop
 
-The e-commerce services automatically connect to the logging microservice when:
+The flipflop services automatically connect to the logging microservice when:
 
 1. **Logging microservice is running** on nginx-network
-2. **Environment variable is set** in e-commerce `.env`:
+2. **Environment variable is set** in flipflop `.env`:
 
    ```env
    LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
@@ -200,19 +200,19 @@ The e-commerce services automatically connect to the logging microservice when:
 
 ### Verify Integration
 
-From an e-commerce service container:
+From an flipflop service container:
 
 ```bash
 # Test connectivity
-docker exec e-commerce-api-gateway curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+docker exec flipflop-api-gateway curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
 
 # Test log ingestion
-docker exec e-commerce-api-gateway curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \  # PORT configured in logging-microservice/.env
+docker exec flipflop-api-gateway curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \  # PORT configured in logging-microservice/.env
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
-    "message": "Test from e-commerce",
-    "service": "e-commerce-api-gateway"
+    "message": "Test from flipflop",
+    "service": "flipflop-api-gateway"
   }'
 ```
 
@@ -375,7 +375,7 @@ Before deploying to production:
 - [ ] Health check endpoint working
 - [ ] Log ingestion working
 - [ ] Log query working
-- [ ] Integration with e-commerce verified
+- [ ] Integration with flipflop verified
 
 ## Quick Reference
 
