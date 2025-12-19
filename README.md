@@ -1,6 +1,6 @@
 # Logging Microservice
 
-Centralized logging service for the FlipFlop.cz e-commerce platform. Collects, stores, and provides querying capabilities for logs from all microservices.
+Centralized logging service for the FlipFlop.cz flipflop platform. Collects, stores, and provides querying capabilities for logs from all microservices.
 
 ## Implementation Status
 
@@ -277,6 +277,12 @@ curl http://logging-microservice:${PORT:-3367}/health
 Create a `.env` file in the project root with the following variables:
 
 ```env
+# Service Domain - Used by nginx-microservice for auto-registry (required for correct domain detection)
+DOMAIN=logging.statex.cz
+
+# Service Name - Used for logging and service identification
+SERVICE_NAME=logging-microservice
+
 # Server Configuration
 PORT=3367  # Configured in logging-microservice/.env (default: 3367)
 NODE_ENV=production
@@ -503,15 +509,15 @@ async function sendLog(level: string, message: string, service: string, metadata
 }
 ```
 
-### E-commerce Integration Example
+### flipflop Integration Example
 
-The e-commerce project uses the centralized logger from `shared/logger/logger.util.ts` which:
+The flipflop project uses the centralized logger from `shared/logger/logger.util.ts` which:
 
 - Sends logs to `http://logging-microservice:${PORT:-3367}/api/logs` (internal network, port configured in `logging-microservice/.env`)
 - Falls back to local file logging if service is unavailable
 - Includes retry logic and error handling
 
-**Environment Variables** (in e-commerce `.env`):
+**Environment Variables** (in flipflop `.env`):
 
 ```env
 LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
@@ -892,10 +898,10 @@ The service is considered successful when:
 ✅ Log querying works
 ✅ Service listing works
 ✅ Docker health checks pass
-✅ Integration with e-commerce verified
+✅ Integration with flipflop verified
 ✅ Documentation complete
 ✅ Deployment scripts ready
 
 ## License
 
-Part of the FlipFlop.cz e-commerce platform.
+Part of the FlipFlop.cz flipflop platform.
