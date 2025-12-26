@@ -2,6 +2,14 @@
 
 Centralized logging service for the FlipFlop.cz flipflop platform. Collects, stores, and provides querying capabilities for logs from all microservices.
 
+## ⚠️ Production-Ready Service
+
+This service is **production-ready** and should **NOT** be modified directly.
+
+- **✅ Allowed**: Use scripts from this service's directory
+- **❌ NOT Allowed**: Modify code, configuration, or infrastructure directly
+- **⚠️ Permission Required**: If you need to modify something, **ask for permission first**
+
 ## Implementation Status
 
 ✅ **Complete** - All features implemented and tested. The service is ready for production deployment.
