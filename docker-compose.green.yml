@@ -25,6 +25,7 @@ services:
       resources:
         limits:
           memory: 100M
+          cpus: '0.25'
         reservations:
           memory: 30M
     restart: unless-stopped
