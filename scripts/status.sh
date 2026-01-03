@@ -13,12 +13,19 @@ echo "=========================================="
 echo "Logging Microservice Status"
 echo "=========================================="
 
+# Load environment variables
+if [ -f .env ]; then
+  source .env
+fi
+SERVICE_NAME=${SERVICE_NAME:-logging-microservice}
+PORT=${PORT:-3367}
+NGINX_NETWORK_NAME=${NGINX_NETWORK_NAME:-nginx-network}
+
 # Check if container is running
-if docker ps --format '{{.Names}}' | grep -q "^logging-microservice$"; then
+if docker ps --format '{{.Names}}' | grep -q "^${SERVICE_NAME}$"; then
   echo "✅ Container is running"
   
   # Check health
-  PORT=${PORT:-3367}
   if docker compose exec -T logging-service wget --quiet --tries=1 --spider "http://localhost:${PORT}/health" 2>/dev/null; then
     echo "✅ Health check passed"
   else
@@ -28,17 +35,17 @@ if docker ps --format '{{.Names}}' | grep -q "^logging-microservice$"; then
   # Show container info
   echo ""
   echo "Container Information:"
-  docker ps --filter "name=logging-microservice" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+  docker ps --filter "name=${SERVICE_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
   
   # Check network
-  if docker network inspect nginx-network >/dev/null 2>&1; then
-    if docker network inspect nginx-network | grep -q "logging-microservice"; then
-      echo "✅ Connected to nginx-network"
+  if docker network inspect ${NGINX_NETWORK_NAME} >/dev/null 2>&1; then
+    if docker network inspect ${NGINX_NETWORK_NAME} | grep -q "${SERVICE_NAME}"; then
+      echo "✅ Connected to ${NGINX_NETWORK_NAME}"
     else
-      echo "⚠️  Not connected to nginx-network"
+      echo "⚠️  Not connected to ${NGINX_NETWORK_NAME}"
     fi
   else
-    echo "⚠️  nginx-network not found"
+    echo "⚠️  ${NGINX_NETWORK_NAME} not found"
   fi
   
 else

@@ -9,8 +9,9 @@ import { Controller, Get } from '@nestjs/common';
 export class InfoController {
   @Get()
   getServiceInfo() {
+    const serviceName = process.env.SERVICE_NAME || 'logging-microservice';
     return {
-      service: 'logging-microservice',
+      service: serviceName,
       description: 'Centralized logging service for collecting, storing, and querying logs from all microservices',
       version: '1.0.0',
       status: 'operational',
@@ -33,9 +34,10 @@ export class InfoController {
 
   @Get('api')
   getApiInfo() {
+    const serviceName = process.env.SERVICE_NAME || 'logging-microservice';
     return {
       success: true,
-      service: 'logging-microservice',
+      service: serviceName,
       apiVersion: '1.0.0',
       endpoints: [
         {
@@ -46,7 +48,7 @@ export class InfoController {
             success: true,
             status: 'ok',
             timestamp: 'ISO 8601 string',
-            service: 'logging-microservice',
+            service: serviceName,
           },
         },
         {

@@ -2,24 +2,21 @@
 
 ## Overview
 
-This guide covers deploying the logging microservice to production on the statex server.
+This guide covers deploying the logging microservice to production.
 
 ## Prerequisites
 
 1. **Access to Production Server**:
-
-   ```bash
-   ssh statex
-   ```
+   - SSH access to production server (configure `SSH_HOST` in `.env`)
 
 2. **Required Infrastructure**:
    - Docker and Docker Compose installed
-   - nginx-network Docker network exists (created by nginx-microservice)
+   - `${NGINX_NETWORK_NAME:-nginx-network}` Docker network exists (created by nginx-microservice)
    - Sufficient disk space for logs
 
 3. **Project Location**:
-   - Production: `/home/statex/logging-microservice` (or as configured)
-   - Local: `/Users/sergiystashok/Documents/GitHub/logging-microservice`
+   - Production: `${PROJECT_BASE_PATH:-/home/user}/logging-microservice` (configured in `.env`)
+   - Local: Your local development path
 
 ## Initial Deployment
 
@@ -28,8 +25,7 @@ This guide covers deploying the logging microservice to production on the statex
 If the repository doesn't exist on production:
 
 ```bash
-ssh statex
-cd /home/statex
+cd ${PROJECT_BASE_PATH:-/home/user}
 git clone <repository-url> logging-microservice
 cd logging-microservice
 ```
@@ -37,8 +33,7 @@ cd logging-microservice
 Or if using existing directory:
 
 ```bash
-ssh statex
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 git pull origin main
 ```
 
@@ -47,7 +42,7 @@ git pull origin main
 Create `.env` file:
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 cp .env.example .env
 # Edit .env with production values
 nano .env
@@ -56,8 +51,12 @@ nano .env
 Required environment variables:
 
 ```env
+# Service Configuration
+SERVICE_NAME=logging-microservice
+DOMAIN=logging.example.com
+
 # Server Configuration
-PORT=3367  # Configured in logging-microservice/.env (default: 3367)
+PORT=3367
 NODE_ENV=production
 CORS_ORIGIN=*
 
@@ -70,27 +69,30 @@ LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
 
 # Network Configuration
 NGINX_NETWORK_NAME=nginx-network
+
+# Docker Volume Configuration
+DOCKER_VOLUME_BASE_PATH=/srv/storagebox/docker-volumes
 ```
 
 ### Step 3: Verify Network
 
-Ensure nginx-network exists:
+Ensure network exists:
 
 ```bash
-docker network inspect nginx-network
+docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
 ```
 
 If it doesn't exist, start nginx-microservice first:
 
 ```bash
-cd /home/statex/nginx-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/nginx-microservice
 docker compose up -d
 ```
 
 ### Step 4: Deploy
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 ./scripts/deploy.sh
 ```
 
@@ -110,12 +112,11 @@ The deployment script will:
 ./scripts/status.sh
 
 # Test health endpoint
-curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+curl http://localhost:${PORT:-3367}/health  # PORT configured in .env
 
 # Test from another container
-# Port configured in logging-microservice/.env: PORT (default: 3367)
-docker run --rm --network nginx-network alpine/curl:latest \
-  curl -s http://logging-microservice:${PORT:-3367}/health
+docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
+  curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
 ```
 
 ## Updating the Service
@@ -123,16 +124,14 @@ docker run --rm --network nginx-network alpine/curl:latest \
 ### Method 1: Using Update Script (Recommended)
 
 ```bash
-ssh statex
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 ./scripts/update.sh
 ```
 
 ### Method 2: Manual Update
 
 ```bash
-ssh statex
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 
 # Pull latest code
 git pull origin main
@@ -150,21 +149,21 @@ docker compose up -d
 ### Start Service
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 docker compose up -d
 ```
 
 ### Stop Service
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 docker compose down
 ```
 
 ### Restart Service
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 docker compose restart logging-service
 ```
 
@@ -191,11 +190,11 @@ tail -f logs/error-$(date +%Y-%m-%d).log
 
 The flipflop services automatically connect to the logging microservice when:
 
-1. **Logging microservice is running** on nginx-network
+1. **Logging microservice is running** on ${NGINX_NETWORK_NAME:-nginx-network}
 2. **Environment variable is set** in flipflop `.env`:
 
    ```env
-   LOGGING_SERVICE_URL=http://logging-microservice:${PORT:-3367}  # PORT configured in logging-microservice/.env
+   LOGGING_SERVICE_URL=http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}  # Configured in logging-microservice/.env
    ```
 
 ### Verify Integration
@@ -204,10 +203,10 @@ From an flipflop service container:
 
 ```bash
 # Test connectivity
-docker exec flipflop-api-gateway curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+docker exec flipflop-api-gateway curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
 
 # Test log ingestion
-docker exec flipflop-api-gateway curl -X POST http://logging-microservice:${PORT:-3367}/api/logs \  # PORT configured in logging-microservice/.env
+docker exec flipflop-api-gateway curl -X POST http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs \
   -H "Content-Type: application/json" \
   -d '{
     "level": "info",
@@ -223,7 +222,7 @@ docker exec flipflop-api-gateway curl -X POST http://logging-microservice:${PORT
 The service includes a health check endpoint:
 
 ```bash
-curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+curl http://localhost:${PORT:-3367}/health  # PORT configured in .env
 ```
 
 Docker also performs automatic health checks (configured in docker-compose.yml).
@@ -258,13 +257,13 @@ df -h
 2. **Check port availability**:
 
    ```bash
-   netstat -tuln | grep ${PORT:-3367}  # PORT configured in logging-microservice/.env
+   netstat -tuln | grep ${PORT:-3367}  # PORT configured in .env
    ```
 
 3. **Check Docker network**:
 
    ```bash
-   docker network inspect nginx-network
+   docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
    ```
 
 ### Health Check Failing
@@ -272,7 +271,7 @@ df -h
 1. **Test manually**:
 
    ```bash
-     docker exec logging-microservice wget -q -O- http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+     docker exec ${SERVICE_NAME:-logging-microservice} wget -q -O- http://localhost:${PORT:-3367}/health  # PORT configured in .env
    ```
 
 2. **Check service logs**:
@@ -312,20 +311,20 @@ df -h
 1. **Verify service is on network**:
 
    ```bash
-   docker network inspect nginx-network | grep logging-microservice
+   docker network inspect ${NGINX_NETWORK_NAME:-nginx-network} | grep ${SERVICE_NAME:-logging-microservice}
    ```
 
 2. **Test from another container**:
 
    ```bash
-   docker run --rm --network nginx-network alpine/curl:latest \
-     curl -s http://logging-microservice:${PORT:-3367}/health  # PORT configured in logging-microservice/.env
+   docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
+     curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
    ```
 
 3. **Reconnect to network**:
 
    ```bash
-   docker network connect nginx-network logging-microservice
+   docker network connect ${NGINX_NETWORK_NAME:-nginx-network} ${SERVICE_NAME:-logging-microservice}
    ```
 
 ## Backup and Maintenance
@@ -333,7 +332,7 @@ df -h
 ### Backup Logs
 
 ```bash
-cd /home/statex/logging-microservice
+cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
 tar -czf logs-backup-$(date +%Y%m%d).tar.gz logs/
 # Copy to backup location
 ```
@@ -409,4 +408,4 @@ For issues:
 1. Check service logs: `docker compose logs logging-service`
 2. Check application logs: `tail -f logs/application-*.log`
 3. Verify network: `docker network inspect nginx-network`
-4. Test health: `curl http://localhost:${PORT:-3367}/health  # PORT configured in logging-microservice/.env`
+4. Test health: `curl http://localhost:${PORT:-3367}/health  # PORT configured in .env`

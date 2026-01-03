@@ -12,7 +12,7 @@ export class HealthController {
       success: true,
       status: 'ok',
       timestamp: new Date().toISOString(),
-      service: 'logging-microservice',
+      service: process.env.SERVICE_NAME || 'logging-microservice',
     };
   }
 }
