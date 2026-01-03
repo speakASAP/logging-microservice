@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: logging-microservice-blue
+    container_name: ${SERVICE_NAME:-logging-microservice}-blue
     ports:
       - "${PORT:-3367}:${PORT:-3367}"
     env_file:
@@ -18,7 +18,7 @@ services:
       - LOG_ROTATION_MAX_FILES=${LOG_ROTATION_MAX_FILES:-10}
       - LOG_TIMESTAMP_FORMAT=${LOG_TIMESTAMP_FORMAT:-YYYY-MM-DD HH:mm:ss}
     volumes:
-      - /srv/storagebox/statex/docker-volumes/logging-microservice/logs:/app/logs
+      - ${DOCKER_VOLUME_BASE_PATH:-./logs}/${SERVICE_NAME:-logging-microservice}/logs:/app/logs
     networks:
       - nginx-network
     deploy:

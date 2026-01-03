@@ -14,6 +14,13 @@ echo "=========================================="
 
 cd "$PROJECT_DIR"
 
+# Load environment variables
+if [ -f .env ]; then
+  source .env
+fi
+SERVICE_NAME=${SERVICE_NAME:-logging-microservice}
+PORT=${PORT:-3367}
+
 # Pull latest changes
 echo "Pulling latest changes from git..."
 git pull origin main || {

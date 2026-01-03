@@ -28,13 +28,20 @@ if [ ! -f .env ]; then
   fi
 fi
 
+# Load environment variables
+if [ -f .env ]; then
+  source .env
+fi
+SERVICE_NAME=${SERVICE_NAME:-logging-microservice}
+NGINX_NETWORK_NAME=${NGINX_NETWORK_NAME:-nginx-network}
+
 # Check if nginx-network exists
 echo "Checking Docker network..."
-if ! docker network inspect nginx-network >/dev/null 2>&1; then
-  echo "❌ nginx-network not found. Please ensure nginx-microservice is running."
+if ! docker network inspect ${NGINX_NETWORK_NAME} >/dev/null 2>&1; then
+  echo "❌ ${NGINX_NETWORK_NAME} not found. Please ensure nginx-microservice is running."
   exit 1
 fi
-echo "✅ nginx-network found"
+echo "✅ ${NGINX_NETWORK_NAME} found"
 
 # Ensure logs directory exists
 echo "Ensuring logs directory exists..."
@@ -72,9 +79,9 @@ echo ""
 echo "=========================================="
 echo "Deployment Complete"
 echo "=========================================="
-echo "Service: logging-microservice"
-echo "Port: ${PORT} (configured in logging-microservice/.env)"
-echo "Network: nginx-network"
+echo "Service: ${SERVICE_NAME}"
+echo "Port: ${PORT} (configured in .env)"
+echo "Network: ${NGINX_NETWORK_NAME}"
 echo ""
 echo "Useful commands:"
 echo "  View logs: docker compose logs -f logging-service"
