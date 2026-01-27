@@ -49,7 +49,7 @@ This service is **production-ready** and should **NOT** be modified directly.
 **Port Range**: 33xx (shared microservices)
 
 | Service | Host Port | Container Port | .env Variable | Description |
-|---------|-----------|----------------|---------------|-------------|
+| ------- | --------- | -------------- | ------------- | ----------- |
 | **Logging Service** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (`.env`) | Centralized logging service |
 
 **Note**:
@@ -109,7 +109,7 @@ The DTO (Data Transfer Object) defines the structure of data that services must 
 **Field Details**:
 
 | Field | Type | Required | Description |
-|-------|------|----------|-------------|
+| ----- | ---- | -------- | ----------- |
 | `level` | enum | ✅ Yes | One of: `"error"`, `"warn"`, `"info"`, `"debug"` |
 | `message` | string | ✅ Yes | The log message (cannot be empty) |
 | `service` | string | ✅ Yes | Service identifier (cannot be empty) |
@@ -179,7 +179,7 @@ Retrieve logs with optional filtering.
 **Query Parameters** (all optional):
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+| --------- | ---- | ----------- |
 | `service` | string | Filter by service name |
 | `level` | string | Filter by log level: `error`, `warn`, `info`, `debug` |
 | `startDate` | string | Start date for filtering (ISO 8601 format) |
@@ -392,6 +392,7 @@ Log files are automatically rotated:
 The Logging Microservice is designed to be a **universal centralized logging solution** that can be used by any service or application. It provides a simple HTTP API for log ingestion and querying, making it easy to integrate into any technology stack.
 
 **Key Benefits**:
+
 - ✅ **Universal** - Works with any programming language or framework
 - ✅ **Simple** - HTTP REST API, no complex protocols
 - ✅ **Flexible** - Configurable service name, domain, and ports
@@ -416,12 +417,14 @@ Before integrating, you need to know how to connect to the logging microservice.
 **To find the service configuration**:
 
 1. **If you have access to the logging microservice directory**:
+
    ```bash
    cd /path/to/logging-microservice
    cat .env | grep -E "SERVICE_NAME|DOMAIN|PORT"
    ```
 
 2. **If you're using Docker**:
+
    ```bash
    # Find the service name
    docker ps | grep logging
@@ -436,6 +439,7 @@ Before integrating, you need to know how to connect to the logging microservice.
    - `PORT`: Usually `3367` (default port for logging services)
 
 **Connection URLs**:
+
 - **Internal (Docker network)**: `http://${SERVICE_NAME}:${PORT}` (e.g., `http://logging-microservice:3367`)
 - **External (HTTPS)**: `https://${DOMAIN}` (e.g., `https://logging.example.com`)
 
@@ -965,16 +969,19 @@ async function createUser(userData: UserData) {
 ### Configuration Summary
 
 **For services on the same Docker network** (recommended):
+
 ```env
 LOGGING_SERVICE_URL=http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}
 ```
 
 **For services outside Docker network**:
+
 ```env
 LOGGING_SERVICE_URL=https://${DOMAIN}
 ```
 
 **For flexible configuration**:
+
 ```env
 LOGGING_SERVICE_NAME=logging-microservice
 LOGGING_SERVICE_PORT=3367
@@ -982,7 +989,8 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
 # Then construct URL in code based on network location
 ```
 
-**Note**: 
+**Note**:
+
 - Use the **internal Docker network URL** (`http://${SERVICE_NAME}:${PORT}`) for services on the same Docker network - this is faster and doesn't require SSL
 - Use the **external HTTPS URL** (`https://${DOMAIN}`) for services outside the Docker network or for external access
 - The service name, port, and domain are configured in the logging microservice's `.env` file
@@ -992,11 +1000,13 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
 **Minimum setup to start logging**:
 
 1. **Add to your service's `.env`**:
+
    ```env
    LOGGING_SERVICE_URL=http://logging-microservice:3367
    ```
 
 2. **Send a log** (any language):
+
    ```bash
    curl -X POST http://logging-microservice:3367/api/logs \
      -H "Content-Type: application/json" \
@@ -1008,11 +1018,13 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
    ```
 
 3. **Query logs**:
+
    ```bash
    curl "http://logging-microservice:3367/api/logs/query?service=my-service&limit=10"
    ```
 
 **Common use cases**:
+
 - ✅ **Application logs** - Log all application events, errors, and info
 - ✅ **Request logging** - Log HTTP requests/responses in middleware
 - ✅ **Error tracking** - Centralize error logs from all services
@@ -1021,12 +1033,14 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
 - ✅ **Monitoring** - Aggregate logs from multiple services in one place
 
 **Supported log levels**:
+
 - `error` - Errors that need immediate attention
 - `warn` - Warnings that should be reviewed
 - `info` - Informational messages (default)
 - `debug` - Debug information (verbose)
 
 **API Endpoints Summary**:
+
 - `POST /api/logs` - Send a log entry
 - `GET /api/logs/query` - Query logs with filters
 - `GET /api/logs/services` - List all services that have sent logs
