@@ -35,6 +35,36 @@ services:
       retries: 2
       start_period: 10s
 
+  # Web UI (landing + admin). On prod, nginx-microservice routes / to this and /api/ to logging-service.
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-https://auth.statex.cz}
+    container_name: ${SERVICE_NAME:-logging-microservice}-frontend
+    ports:
+      - "${FRONTEND_PORT:-3368}:80"
+    volumes:
+      - ./web/nginx.local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - logging-service
+    networks:
+      - nginx-network
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 20M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 5s
+
 networks:
   nginx-network:
     external: true

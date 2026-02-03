@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | Logging Service</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="admin">
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <h1>Admin login</h1>
+      <p class="login-hint">Sign in with your auth-microservice account.</p>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+      <p id="login-error" class="error-msg" role="alert" hidden></p>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="admin-panel" hidden>
+    <header class="admin-header">
+      <a href="/" class="logo">Logging</a>
+      <nav>
+        <span class="user-email" id="user-email"></span>
+        <button type="button" id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
+      </nav>
+    </header>
+
+    <main class="admin-main">
+      <section class="stats-section">
+        <h2>Statistics</h2>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="stat-total">—</span>
+            <span class="stat-label">Logs (current query)</span>
+          </div>
+          <div class="stat-card stat-error">
+            <span class="stat-value" id="stat-error">—</span>
+            <span class="stat-label">Errors</span>
+          </div>
+          <div class="stat-card stat-warn">
+            <span class="stat-value" id="stat-warn">—</span>
+            <span class="stat-label">Warnings</span>
+          </div>
+          <div class="stat-card stat-info">
+            <span class="stat-value" id="stat-info">—</span>
+            <span class="stat-label">Info</span>
+          </div>
+          <div class="stat-card stat-debug">
+            <span class="stat-value" id="stat-debug">—</span>
+            <span class="stat-label">Debug</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="services-section">
+        <h2>Services</h2>
+        <div class="services-list" id="services-list">
+          <p class="loading" id="services-loading">Loading services…</p>
+        </div>
+      </section>
+
+      <section class="logs-section">
+        <h2>Log history</h2>
+        <form id="filters-form" class="filters-form">
+          <label>
+            Service
+            <select name="service" id="filter-service">
+              <option value="">All</option>
+            </select>
+          </label>
+          <label>
+            Level
+            <select name="level" id="filter-level">
+              <option value="">All</option>
+              <option value="error">Error</option>
+              <option value="warn">Warn</option>
+              <option value="info">Info</option>
+              <option value="debug">Debug</option>
+            </select>
+          </label>
+          <label>
+            Start date
+            <input type="date" name="startDate" id="filter-start">
+          </label>
+          <label>
+            End date
+            <input type="date" name="endDate" id="filter-end">
+          </label>
+          <label>
+            Limit
+            <select name="limit" id="filter-limit">
+              <option value="30">30</option>
+              <option value="100" selected>100</option>
+              <option value="500">500</option>
+            </select>
+          </label>
+          <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+        <div class="logs-table-wrap">
+          <table class="logs-table" id="logs-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Level</th>
+                <th>Service</th>
+                <th>Message</th>
+                <th>Metadata</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody">
+            </tbody>
+          </table>
+        </div>
+        <p id="logs-error" class="error-msg" hidden></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/config.injected.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

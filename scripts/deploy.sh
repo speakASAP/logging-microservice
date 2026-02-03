@@ -3,6 +3,11 @@
 # Deploys the logging microservice to production using the
 # nginx-microservice blue/green deployment system.
 #
+# - Uses: nginx-microservice/scripts/blue-green/deploy-smart.sh
+# - SSL: Let's Encrypt (not self-signed). ensure-infrastructure.sh requests
+#   a real certificate via certbot when a temporary cert is present. Set
+#   CERTBOT_EMAIL in nginx-microservice/.env for Let's Encrypt contact.
+#
 # The script automatically detects the nginx-microservice location and
 # calls the deploy-smart.sh script to perform the deployment.
 

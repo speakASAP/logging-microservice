@@ -1,0 +1,4 @@
+/**
+ * Injected at Docker build: AUTH_SERVICE_URL. Replace __AUTH_SERVICE_URL_VALUE__ in Dockerfile.
+ */
+window.__AUTH_SERVICE_URL__ = '__AUTH_SERVICE_URL_VALUE__';

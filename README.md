@@ -35,6 +35,15 @@ This service is **production-ready** and should **NOT** be modified directly.
 - ✅ Health checks
 - ✅ CORS support
 
+### Web Interface
+
+- ✅ **Landing page** – Marketing page for potential customers at `https://${DOMAIN}` (root)
+- ✅ **Admin panel** – Login via auth-microservice at `https://${DOMAIN}/admin/`
+- ✅ **Statistics** – Log counts by level (error, warn, info, debug) for the current query
+- ✅ **Services list** – All services that have sent logs (`GET /api/logs/services`)
+- ✅ **Log history** – Filterable table (service, level, date range, limit)
+- ✅ **Docker Compose** – Frontend served at DOMAIN on prod; nginx-microservice routes `/` to frontend and `/api/` to backend
+
 ## Technology Stack
 
 - **Framework**: NestJS (TypeScript)
@@ -46,17 +55,18 @@ This service is **production-ready** and should **NOT** be modified directly.
 
 ## 🔌 Port Configuration
 
-**Port Range**: 33xx (shared microservices)
+**Reserved port range for logging-microservice**: 3367–3368 (33xx shared microservices)
 
 | Service | Host Port | Container Port | .env Variable | Description |
 | ------- | --------- | -------------- | ------------- | ----------- |
-| **Logging Service** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (`.env`) | Centralized logging service |
+| **Backend (API)** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (`.env`) | Logging API (ingest, query, services) |
+| **Frontend (Web UI)** | `${FRONTEND_PORT:-3368}` | `80` | `FRONTEND_PORT` (`.env`) | Landing page and admin panel |
 
 **Note**:
 
 - All ports are configured in `.env`. The values shown are defaults.
-- All ports are exposed on `127.0.0.1` only (localhost) for security
-- External access is provided via nginx-microservice reverse proxy at `https://${DOMAIN}` (configured in `.env`)
+- Backend and frontend host ports are exposed on `127.0.0.1` only (localhost) for security.
+- External access is provided via nginx-microservice reverse proxy at `https://${DOMAIN}` (configured in `.env`). Nginx routes `/` to the frontend and `/api/` to the backend.
 
 ### Base URLs
 
@@ -289,6 +299,10 @@ Create a `.env` file in the project root with the following variables:
 SERVICE_NAME=logging-microservice
 DOMAIN=logging.example.com
 
+# Web UI (admin panel login and frontend port)
+AUTH_SERVICE_URL=https://auth.example.com
+FRONTEND_PORT=3368
+
 # Server Configuration
 PORT=3367
 NODE_ENV=production
@@ -351,6 +365,26 @@ docker compose down
 # Restart service
 docker compose restart logging-service
 ```
+
+### Web Interface Access
+
+- **Landing page**: `https://${DOMAIN}` (prod) or `http://localhost:${FRONTEND_PORT:-3368}` (local)
+- **Admin panel**: `https://${DOMAIN}/admin/` – login with auth-microservice (email/password). After login you see statistics, services list, and log history with filters (service, level, date range, limit).
+- **Production**: Run `./scripts/deploy.sh` from the logging-microservice directory (or from nginx-microservice: `./scripts/blue-green/deploy-smart.sh logging-microservice`). Nginx routes `/` to the frontend and `/api/` to the logging API. Set `AUTH_SERVICE_URL` in `.env` (e.g. `https://auth.statex.cz`) so the admin login uses your auth-microservice.
+
+### Testing admin panel
+
+1. Ensure **auth-microservice** is running (e.g. on prod: start it or use existing deployment).
+2. Create a test user: in auth-microservice run `./scripts/create-test-user.sh` (uses `TEST_EMAIL`/`TEST_PASSWORD` from `.env` or defaults `test@example.com` / `testpassword123`).
+3. Open `https://${DOMAIN}/admin/`, log in with that user, then check statistics, services list, and log history with filters.
+
+### SSL (Let's Encrypt)
+
+Deployment uses nginx-microservice blue/green flow. SSL certificates are issued by **Let's Encrypt** (not self-signed):
+
+1. On first deploy, a temporary self-signed certificate may be created so nginx can start.
+2. `ensure-infrastructure.sh` (run during deploy) detects temporary certs (valid &lt; 30 days) and requests a real certificate via certbot: `request-cert.sh <domain> <email>`.
+3. Set `CERTBOT_EMAIL` in **nginx-microservice** `.env` (e.g. `admin@statex.cz`) so Let's Encrypt can contact you. Optionally set `certbot_email` in the service registry for this domain.
 
 ## Log Storage
 
