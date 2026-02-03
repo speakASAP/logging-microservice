@@ -2,38 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Centralized Logging Service | Statex</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="landing">
   <header class="hero">
-    <nav class="nav">
-      <span class="logo">Logging</span>
-      <a href="/admin/" class="btn btn-outline">Admin</a>
+    <nav class="nav nav--landing">
+      <span class="logo logo--landing">Logging</span>
+      <a href="/admin/" class="btn btn-outline btn--nav">Admin</a>
     </nav>
     <div class="hero-content">
-      <h1>Centralized logging for your microservices</h1>
+      <h1 class="hero-title">Centralized logging for your microservices</h1>
       <p class="lead">Collect, store, and query logs from all your services in one place. Simple HTTP API. No vendor lock-in.</p>
-      <a href="/admin/" class="btn btn-primary">Open admin panel</a>
+      <a href="/admin/" class="btn btn-primary btn--cta">Open admin panel</a>
     </div>
   </header>
 
   <section class="features">
-    <h2>Why use centralized logging?</h2>
+    <h2 class="features-title">Why use centralized logging?</h2>
     <div class="feature-grid">
       <div class="feature-card">
-        <span class="feature-icon">&#128203;</span>
+        <span class="feature-icon" aria-hidden="true">&#128203;</span>
         <h3>One API</h3>
         <p>POST logs from any language. Query by service, level, and date range.</p>
       </div>
       <div class="feature-card">
-        <span class="feature-icon">&#128200;</span>
+        <span class="feature-icon" aria-hidden="true">&#128200;</span>
         <h3>Daily rotation</h3>
         <p>File-based storage with configurable rotation. JSON and human-readable formats.</p>
       </div>
       <div class="feature-card">
-        <span class="feature-icon">&#9881;</span>
+        <span class="feature-icon" aria-hidden="true">&#9881;</span>
         <h3>Self-hosted</h3>
         <p>Deploy on your domain. Works with Docker and nginx. No SaaS dependency.</p>
       </div>
@@ -41,8 +41,8 @@
   </section>
 
   <section class="cta">
-    <p>Integrate in minutes. Use the same DOMAIN for API and admin.</p>
-    <a href="/admin/" class="btn btn-primary">Get started</a>
+    <p class="cta-text">Integrate in minutes. Use the same DOMAIN for API and admin.</p>
+    <a href="/admin/" class="btn btn-primary btn--cta">Get started</a>
   </section>
 
   <footer class="footer">

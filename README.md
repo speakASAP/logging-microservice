@@ -64,7 +64,7 @@ This service is **production-ready** and should **NOT** be modified directly.
 
 **Note**:
 
-- All ports are configured in `.env`. The values shown are defaults.
+- All ports are configured in `.env`. Set `PORT` (backend) and `FRONTEND_PORT` (frontend) to match this table; defaults are 3367 and 3372.
 - Backend and frontend host ports are exposed on `127.0.0.1` only (localhost) for security.
 - External access is provided via nginx-microservice reverse proxy at `https://${DOMAIN}` (configured in `.env`). Nginx routes `/` to the frontend and `/api/` to the backend.
 
