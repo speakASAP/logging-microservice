@@ -55,12 +55,12 @@ This service is **production-ready** and should **NOT** be modified directly.
 
 ## 🔌 Port Configuration
 
-**Reserved port range for logging-microservice**: 3367–3368 (33xx shared microservices)
+**Reserved port range for logging-microservice**: 3367, 3372 (33xx shared microservices; 3368=notifications, 3369=payments)
 
 | Service | Host Port | Container Port | .env Variable | Description |
 | ------- | --------- | -------------- | ------------- | ----------- |
 | **Backend (API)** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (`.env`) | Logging API (ingest, query, services) |
-| **Frontend (Web UI)** | `${FRONTEND_PORT:-3368}` | `80` | `FRONTEND_PORT` (`.env`) | Landing page and admin panel |
+| **Frontend (Web UI)** | `${FRONTEND_PORT:-3372}` | `80` | `FRONTEND_PORT` (`.env`) | Landing page and admin panel |
 
 **Note**:
 
@@ -301,7 +301,7 @@ DOMAIN=logging.example.com
 
 # Web UI (admin panel login and frontend port)
 AUTH_SERVICE_URL=https://auth.example.com
-FRONTEND_PORT=3368
+FRONTEND_PORT=3372
 
 # Server Configuration
 PORT=3367
@@ -368,7 +368,7 @@ docker compose restart logging-service
 
 ### Web Interface Access
 
-- **Landing page**: `https://${DOMAIN}` (prod) or `http://localhost:${FRONTEND_PORT:-3368}` (local)
+- **Landing page**: `https://${DOMAIN}` (prod) or `http://localhost:${FRONTEND_PORT:-3372}` (local)
 - **Admin panel**: `https://${DOMAIN}/admin/` – login with auth-microservice (email/password). After login you see statistics, services list, and log history with filters (service, level, date range, limit).
 - **Production**: Run `./scripts/deploy.sh` from the logging-microservice directory (or from nginx-microservice: `./scripts/blue-green/deploy-smart.sh logging-microservice`). Nginx routes `/` to the frontend and `/api/` to the logging API. Set `AUTH_SERVICE_URL` in `.env` (e.g. `https://auth.statex.cz`) so the admin login uses your auth-microservice.
 
