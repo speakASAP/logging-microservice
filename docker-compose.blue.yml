@@ -45,7 +45,7 @@ services:
         AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-https://auth.statex.cz}
     container_name: ${SERVICE_NAME:-logging-microservice}-frontend-blue
     ports:
-      - "${FRONTEND_PORT:-3368}:80"
+      - "${FRONTEND_PORT:-3372}:80"
     networks:
       - nginx-network
     deploy:
