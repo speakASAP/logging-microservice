@@ -109,6 +109,26 @@ if [ -f "$REGISTRY_FILE" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
+# Remove nginx blue/green configs for this domain so they are regenerated from the registry.
+# Otherwise "configs already exist" skips regeneration and we keep default landing (no frontend/backend).
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$PROJECT_ROOT/.env" 2>/dev/null || true
+    set +a
+fi
+DEPLOY_DOMAIN="${DOMAIN:-logging.sgipreal.com}"
+DEPLOY_DOMAIN="${DEPLOY_DOMAIN#https://}"
+DEPLOY_DOMAIN="${DEPLOY_DOMAIN#http://}"
+DEPLOY_DOMAIN="${DEPLOY_DOMAIN%%/*}"
+NGINX_BLUE_GREEN_DIR="$NGINX_MICROSERVICE_PATH/nginx/conf.d/blue-green"
+for f in "${NGINX_BLUE_GREEN_DIR}/${DEPLOY_DOMAIN}.blue.conf" "${NGINX_BLUE_GREEN_DIR}/${DEPLOY_DOMAIN}.green.conf"; do
+    if [ -f "$f" ]; then
+        echo -e "${YELLOW}Removing $f so it is regenerated with frontend/backend.${NC}"
+        rm -f "$f"
+    fi
+done
+
 # Change to nginx-microservice directory and run deployment
 echo -e "${YELLOW}Starting blue/green deployment...${NC}"
 echo ""
