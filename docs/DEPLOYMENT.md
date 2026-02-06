@@ -7,7 +7,8 @@ This guide covers deploying the logging microservice to production.
 ## Prerequisites
 
 1. **Access to Production Server**:
-   - SSH access to production server (configure `SSH_HOST` in `.env`)
+   - SSH access to production server (e.g. `ssh sgipreal` for sgipreal production)
+   - Configure `SSH_HOST` in `.env` if needed
 
 2. **Required Infrastructure**:
    - Docker and Docker Compose installed
@@ -266,12 +267,14 @@ df -h
    docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
    ```
 
-### Health Check Failing
+### Health Check Failing / "Container ... not found"
 
-1. **Test manually**:
+If the deploy fails with a "Container ... not found" health check error, the service registry may have the wrong shape. Re-run `./scripts/deploy.sh`; it will reset an outdated single-container registry so deploy-smart.sh can recreate it from docker-compose.
+
+1. **Test manually** (use the container name from your compose, e.g. backend or logging-service):
 
    ```bash
-     docker exec ${SERVICE_NAME:-logging-microservice} wget -q -O- http://localhost:${PORT:-3367}/health  # PORT configured in .env
+     docker exec <container-name> wget -q -O- http://localhost:${PORT:-3367}/health
    ```
 
 2. **Check service logs**:
