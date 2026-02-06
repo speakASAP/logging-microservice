@@ -53,6 +53,8 @@ if [ -d "/home/statex/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/statex/nginx-microservice"
 elif [ -d "/home/alfares/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/alfares/nginx-microservice"
+elif [ -d "/home/belunga/nginx-microservice" ]; then
+    NGINX_MICROSERVICE_PATH="/home/belunga/nginx-microservice"
 elif [ -d "$HOME/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="$HOME/nginx-microservice"
 # Check if nginx-microservice is a sibling directory (for local dev)
@@ -95,6 +97,18 @@ echo -e "${GREEN}✅ Found nginx-microservice at: $NGINX_MICROSERVICE_PATH${NC}"
 echo -e "${GREEN}✅ Deploying service: $SERVICE_NAME${NC}"
 echo ""
 
+# If registry has wrong shape (single service with container_name_base = service name),
+# remove it so deploy-smart.sh will auto-create from docker-compose (any structure).
+REGISTRY_FILE="$NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
+if [ -f "$REGISTRY_FILE" ] && command -v jq >/dev/null 2>&1; then
+    SERVICE_KEYS=$(jq -r '.services | keys[]' "$REGISTRY_FILE" 2>/dev/null | wc -l)
+    SINGLE_BASE=$(jq -r '.services | to_entries | if length == 1 then .[0].value.container_name_base // empty else empty end' "$REGISTRY_FILE" 2>/dev/null || echo "")
+    if [ "$SERVICE_KEYS" -eq 1 ] && [ -n "$SINGLE_BASE" ] && [ "$SINGLE_BASE" = "$SERVICE_NAME" ]; then
+        echo -e "${YELLOW}Resetting outdated single-container registry; deploy-smart will recreate from docker-compose.${NC}"
+        rm -f "$REGISTRY_FILE"
+    fi
+fi
+
 # Change to nginx-microservice directory and run deployment
 echo -e "${YELLOW}Starting blue/green deployment...${NC}"
 echo ""
@@ -121,8 +135,8 @@ else
     echo ""
     echo "Please check the error messages above and:"
     echo "  1. Verify nginx-microservice is properly configured"
-    echo "  2. Check service registry file exists: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
-    echo "  3. Review deployment logs"
+    echo "  2. Check service registry: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
+    echo "  3. Review deployment logs (and container logs if health check fails)"
     echo "  4. Check service health: cd $NGINX_MICROSERVICE_PATH && ./scripts/blue-green/health-check.sh $SERVICE_NAME"
     exit 1
 fi
