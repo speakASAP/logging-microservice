@@ -1,12 +1,15 @@
-/* Landing and admin shared */
+/* Landing and admin shared – :root matches auth-microservice for buttons */
 :root {
   --bg: #0f1419;
+  --surface: #1a2332;
   --bg-card: #1a2332;
   --text: #e6edf3;
   --text-muted: #8b949e;
+  --muted: #8b949e;
   --accent: #58a6ff;
   --accent-hover: #79b8ff;
-  --border: #30363d;
+  --border: #2d3a4d;
+  --radius: 8px;
   --error: #f85149;
   --warn: #d29922;
   --info: #58a6ff;
@@ -194,38 +197,29 @@ a:hover {
   font-size: clamp(0.9rem, 2vw, 1rem);
 }
 
-/* Buttons – match auth-microservice: primary solid blue, secondary surface with border */
+/* Buttons – copied from auth-microservice web/public/css/style.css */
 .btn {
   display: inline-block;
   padding: 0.6rem 1.25rem;
   background: var(--accent);
   color: var(--bg);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
-
 .btn:hover {
   background: var(--accent-hover);
   color: var(--bg);
   text-decoration: none;
 }
-
 .btn-secondary {
-  background: var(--bg-card);
+  background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
   margin-left: 0.5rem;
-}
-
-.btn-secondary:hover {
-  background: var(--bg-card);
-  color: var(--text);
-  border-color: var(--border);
 }
 
 .btn-primary {
