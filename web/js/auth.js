@@ -33,6 +33,7 @@
       return fetch(authUrl + '/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: email, password: password })
       }).then(function (res) {
         if (!res.ok) return res.json().then(function (d) { throw new Error(d.message || 'Login failed'); });
@@ -52,6 +53,7 @@
       return fetch(authUrl + '/auth/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ token: token })
       }).then(function (res) {
         if (!res.ok) return null;
