@@ -375,8 +375,8 @@ docker compose restart logging-service
 ### Testing admin panel
 
 1. Ensure **auth-microservice** is running (e.g. on prod: start it or use existing deployment).
-2. Create a test user: in auth-microservice run `./scripts/create-test-user.sh` (uses `TEST_EMAIL`/`TEST_PASSWORD` from `.env` or defaults `test@example.com` / `testpassword123`). On production (e.g. `ssh statex`): `cd auth-microservice && ./scripts/create-test-user.sh`.
-3. Open `https://${DOMAIN}/admin/` (e.g. <https://logging.statex.cz/admin/>), enter **Email**: `test@example.com`, **Password**: `testpassword123` (or values from auth-microservice `.env`), click **Sign in**. Then check statistics, services list, and log history with filters.
+2. Create a test user: in auth-microservice run `./scripts/create-test-user.sh` (uses `TEST_EMAIL`/`TEST_PASSWORD` from auth-microservice `.env`). On production (e.g. `ssh statex`): `cd auth-microservice && ./scripts/create-test-user.sh`.
+3. Open `https://${DOMAIN}/admin/` (e.g. <https://logging.statex.cz/admin/>), sign in with the credentials from auth-microservice `.env` (TEST_EMAIL / TEST_PASSWORD). Then check statistics, services list, and log history with filters.
 
 ### SSL (Let's Encrypt)
 
