@@ -10,6 +10,11 @@
 #
 # The script automatically detects the nginx-microservice location and
 # calls the deploy-smart.sh script to perform the deployment.
+#
+# Note: deploy-smart checks container ports; logging frontend uses container port 80.
+# If you see "[INFO] Port 80 is in use by healthy container nginx-microservice, skipping",
+# that is from nginx-microservice and is harmless. To suppress it, nginx-microservice
+# would need a small change (containers.sh: skip logging when port 80/443 and container is nginx-microservice).
 
 set -e
 
@@ -128,14 +133,54 @@ if [ -f "$REGISTRY_FILE" ] && command -v jq >/dev/null 2>&1; then
     fi
 fi
 
-# Remove nginx blue/green configs for this domain so they are regenerated from the registry.
-# Otherwise "configs already exist" skips regeneration and we keep default landing (no frontend/backend).
+# Load .env for domain and ports
 if [ -f "$PROJECT_ROOT/.env" ]; then
     set -a
     # shellcheck source=/dev/null
     source "$PROJECT_ROOT/.env" 2>/dev/null || true
     set +a
 fi
+
+# Ports used by blue/green (host ports; must match docker-compose.blue.yml / docker-compose.green.yml)
+PORT_BACKEND="${PORT:-3367}"
+PORT_FRONTEND="${FRONTEND_PORT:-3372}"
+
+# Free ports if occupied by our own containers (e.g. after a failed deploy or leftover containers)
+if command -v docker >/dev/null 2>&1; then
+    for c in logging-microservice-backend-blue logging-microservice-backend-green \
+             logging-microservice-frontend-blue logging-microservice-frontend-green; do
+        if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${c}$"; then
+            echo -e "${YELLOW}Stopping and removing existing container: $c (to free port)${NC}"
+            docker stop "$c" 2>/dev/null || true
+            docker rm "$c" 2>/dev/null || true
+        fi
+    done
+fi
+
+# Check if required host ports are still in use by something else
+check_port() {
+    local port=$1
+    if command -v ss >/dev/null 2>&1; then
+        ss -tlnp 2>/dev/null | grep -q ":${port}[[:space:]]" && return 0
+    fi
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -i ":${port}" -sTCP:LISTEN -t >/dev/null 2>&1 && return 0
+    fi
+    return 1
+}
+if check_port "$PORT_BACKEND"; then
+    echo -e "${RED}❌ Error: port $PORT_BACKEND is still in use. Stop the process using it and retry.${NC}"
+    echo "  Example: ss -tlnp | grep $PORT_BACKEND   or   lsof -i :$PORT_BACKEND"
+    exit 1
+fi
+if check_port "$PORT_FRONTEND"; then
+    echo -e "${RED}❌ Error: port $PORT_FRONTEND is still in use. Stop the process using it and retry.${NC}"
+    echo "  Example: ss -tlnp | grep $PORT_FRONTEND   or   lsof -i :$PORT_FRONTEND"
+    exit 1
+fi
+
+# Remove nginx blue/green configs for this domain so they are regenerated from the registry.
+# Otherwise "configs already exist" skips regeneration and we keep default landing (no frontend/backend).
 DEPLOY_DOMAIN="${DOMAIN:-logging.sgipreal.com}"
 DEPLOY_DOMAIN="${DEPLOY_DOMAIN#https://}"
 DEPLOY_DOMAIN="${DEPLOY_DOMAIN#http://}"
@@ -173,10 +218,11 @@ else
     echo -e "${RED}╚══════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo "Please check the error messages above and:"
-    echo "  1. Verify nginx-microservice is properly configured"
-    echo "  2. Check service registry: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
-    echo "  3. Review deployment logs (and container logs if health check fails)"
-    echo "  4. Check service health: cd $NGINX_MICROSERVICE_PATH && ./scripts/blue-green/health-check.sh $SERVICE_NAME"
+    echo "  1. If you see 'address already in use' or 'port is already allocated' for port $PORT_BACKEND or $PORT_FRONTEND: run ./scripts/deploy.sh again (it stops existing containers first), or free the port: ss -tlnp | grep $PORT_BACKEND  or  ss -tlnp | grep $PORT_FRONTEND"
+    echo "  2. Verify nginx-microservice is properly configured"
+    echo "  3. Check service registry: $NGINX_MICROSERVICE_PATH/service-registry/$SERVICE_NAME.json"
+    echo "  4. Review deployment logs (and container logs if health check fails)"
+    echo "  5. Check service health: cd $NGINX_MICROSERVICE_PATH && ./scripts/blue-green/health-check.sh $SERVICE_NAME"
     exit 1
 fi
 
