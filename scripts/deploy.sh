@@ -72,7 +72,6 @@ DISPLAY_NAME="$(echo "${SERVICE_NAME:0:1}" | tr 'a-z' 'A-Z')${SERVICE_NAME:1}"
 # Try common production paths first, then fallback to relative path
 NGINX_MICROSERVICE_PATH=""
 
-# Check common production paths
 if [ -d "/home/statex/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/statex/nginx-microservice"
 elif [ -d "/home/alfares/nginx-microservice" ]; then
@@ -81,10 +80,8 @@ elif [ -d "/home/belunga/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="/home/belunga/nginx-microservice"
 elif [ -d "$HOME/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="$HOME/nginx-microservice"
-# Check if nginx-microservice is a sibling directory (for local dev)
 elif [ -d "$(dirname "$PROJECT_ROOT")/nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="$(dirname "$PROJECT_ROOT")/nginx-microservice"
-# Check if nginx-microservice is in the same directory
 elif [ -d "$PROJECT_ROOT/../nginx-microservice" ]; then
     NGINX_MICROSERVICE_PATH="$(cd "$PROJECT_ROOT/../nginx-microservice" && pwd)"
 fi
@@ -96,6 +93,7 @@ if [ -z "$NGINX_MICROSERVICE_PATH" ] || [ ! -d "$NGINX_MICROSERVICE_PATH" ]; the
     echo "Please ensure nginx-microservice is installed in one of these locations:"
     echo "  - /home/statex/nginx-microservice"
     echo "  - /home/alfares/nginx-microservice"
+    echo "  - /home/belunga/nginx-microservice"
     echo "  - $HOME/nginx-microservice"
     echo "  - $(dirname "$PROJECT_ROOT")/nginx-microservice (sibling directory)"
     echo ""
