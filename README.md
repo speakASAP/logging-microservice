@@ -126,6 +126,21 @@ The DTO (Data Transfer Object) defines the structure of data that services must 
 | `timestamp` | string | ❌ No | ISO 8601 timestamp (e.g., `"2024-01-01T00:00:00.000Z"`). If omitted, current timestamp is used |
 | `metadata` | object | ❌ No | Additional structured data as key-value pairs |
 
+**Timestamps and request duration (required for analysis)**
+
+All services **must** log **timestamps** and **request/process duration** so that the ecosystem can analyze:
+
+- **Duration of processes** – how long operations take
+- **Timeouts** – which operations hit timeout thresholds
+- **Hanging processes** – requests that never complete (gap between start and next log)
+- **Request duration** – end-to-end request timing for performance and debugging
+
+- **Timestamp**: Prefer sending an explicit `timestamp` (ISO 8601) for each log entry. If omitted, the logging microservice sets the current time at ingest; for accurate ordering and duration analysis, callers should include the time when the event occurred.
+- **Duration**: For requests, jobs, or any process, include in `metadata` at least:
+  - `duration_ms` – elapsed time in milliseconds (e.g. from request start to response, or from job start to completion).
+  - Optionally `started_at` / `finished_at` (ISO 8601) for span-based analysis.
+- **Timeouts**: Log **every timeout as ERROR** (level `error`) so that connectivity issues and slow execution are visible in central logs and can be filtered by level.
+
 **Success Response** (200 OK):
 
 ```json
@@ -433,6 +448,7 @@ The Logging Microservice is designed to be a **universal centralized logging sol
 - ✅ **Reliable** - File-based storage with automatic rotation
 - ✅ **Queryable** - Search and filter logs by service, level, date range
 - ✅ **Production-ready** - Error handling, health checks, and monitoring
+- ✅ **Timestamps and duration** - Callers must log timestamps and request/process duration (`duration_ms`, optional `started_at`/`finished_at`) for analysis of timeouts, hanging processes, and request duration
 
 ### How Other Services Use This Microservice
 
@@ -865,14 +881,15 @@ async function sendLog(entry: LogEntry): Promise<void> {
 
 **Best Practices**:
 
-1. **Use async/non-blocking calls** - Don't block your application waiting for log responses
-2. **Set timeouts** - Use short timeouts (1-2 seconds) to avoid hanging requests
-3. **Implement retries** - For critical logs, implement retry logic (but don't retry forever)
-4. **Fallback logging** - Always have a local fallback (console, file, or both)
-5. **Batch logs** - For high-volume services, consider batching multiple logs in a single request
-6. **Don't log sensitive data** - Never log passwords, tokens, or PII in metadata
-7. **Use appropriate log levels** - Use `error` for errors, `warn` for warnings, `info` for informational, `debug` for debugging
-8. **Include context** - Always include relevant metadata (userId, requestId, etc.) for better debugging
+1. **Log timestamps and duration** - Always include `timestamp` (ISO 8601) and, for requests/processes, `duration_ms` (and optionally `started_at`/`finished_at`) in metadata. This is required for analyzing timeouts, hanging processes, and request duration across the ecosystem.
+2. **Use async/non-blocking calls** - Don't block your application waiting for log responses
+3. **Set timeouts** - Use short timeouts (1-2 seconds) to avoid hanging requests
+4. **Implement retries** - For critical logs, implement retry logic (but don't retry forever)
+5. **Fallback logging** - Always have a local fallback (console, file, or both)
+6. **Batch logs** - For high-volume services, consider batching multiple logs in a single request
+7. **Don't log sensitive data** - Never log passwords, tokens, or PII in metadata
+8. **Use appropriate log levels** - Use `error` for errors, `warn` for warnings, `info` for informational, `debug` for debugging
+9. **Include context** - Always include relevant metadata (userId, requestId, etc.) for better debugging
 
 ### Real-World Integration Examples
 
@@ -1059,12 +1076,12 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
 
 **Common use cases**:
 
-- ✅ **Application logs** - Log all application events, errors, and info
-- ✅ **Request logging** - Log HTTP requests/responses in middleware
+- ✅ **Application logs** - Log all application events, errors, and info (include timestamp and duration where applicable)
+- ✅ **Request logging** - Log HTTP requests/responses in middleware with `duration_ms` and timestamp for timeout/hang analysis
 - ✅ **Error tracking** - Centralize error logs from all services
 - ✅ **Audit logs** - Track user actions and system events
 - ✅ **Debugging** - Query logs by service, level, or time range
-- ✅ **Monitoring** - Aggregate logs from multiple services in one place
+- ✅ **Monitoring** - Aggregate logs from multiple services; use timestamps and duration for timeout, hanging process, and request-duration analysis
 
 **Supported log levels**:
 
