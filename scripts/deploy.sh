@@ -10,11 +10,6 @@
 #
 # The script automatically detects the nginx-microservice location and
 # calls the deploy-smart.sh script to perform the deployment.
-#
-# Note: deploy-smart checks container ports; logging frontend uses container port 80.
-# If you see "[INFO] Port 80 is in use by healthy container nginx-microservice, skipping",
-# that is from nginx-microservice and is harmless. To suppress it, nginx-microservice
-# would need a small change (containers.sh: skip logging when port 80/443 and container is nginx-microservice).
 
 set -e
 
@@ -286,8 +281,8 @@ if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
     echo ""
     echo -e "${GREEN}╔══════════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║      ✅ Logging microservice deployment completed successfully!      ║${NC}"
-    echo -e "${GREEN}║     Total deployment time: ${TOTAL_DURATION_FORMATTED}s                        ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${GREEN}Total deployment time: ${TOTAL_DURATION_FORMATTED}s${NC}"
     echo ""
     echo "The logging microservice has been deployed using blue/green deployment."
     echo "Check the status with:"
