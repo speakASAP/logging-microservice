@@ -19,4 +19,4 @@ All services in the ecosystem.
 ## SLA
 
 - Port: 3367 (<http://logging-microservice:3367>)
-- Production: <https://logging.statex.cz>
+- Production: <https://logging.alfares.cz>
