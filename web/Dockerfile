@@ -1,5 +1,5 @@
 # Logging microservice web UI - static files served by nginx
-ARG AUTH_SERVICE_URL=https://auth.statex.cz
+ARG AUTH_SERVICE_URL=https://auth.alfares.cz
 FROM nginx:alpine AS builder
 ARG AUTH_SERVICE_URL
 WORKDIR /usr/share/nginx/html

@@ -42,7 +42,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-https://auth.statex.cz}
+        AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-https://auth.alfares.cz}
     container_name: ${SERVICE_NAME:-logging-microservice}-frontend-blue
     ports:
       - "${FRONTEND_PORT:-3372}:80"

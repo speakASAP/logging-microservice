@@ -385,13 +385,13 @@ docker compose restart logging-service
 
 - **Landing page**: `https://${DOMAIN}` (prod) or `http://localhost:${FRONTEND_PORT:-3372}` (local)
 - **Admin panel**: `https://${DOMAIN}/admin/` – login with auth-microservice (email/password). After login you see statistics, services list, and log history with filters (service, level, date range, limit).
-- **Production**: Run `./scripts/deploy.sh` from the logging-microservice directory (or from nginx-microservice: `./scripts/blue-green/deploy-smart.sh logging-microservice`). Nginx routes `/` to the frontend and `/api/` to the logging API. Set `AUTH_SERVICE_URL` in `.env` (e.g. `https://auth.statex.cz`) so the admin login uses your auth-microservice.
+- **Production**: Run `./scripts/deploy.sh` from the logging-microservice directory (or from nginx-microservice: `./scripts/blue-green/deploy-smart.sh logging-microservice`). Nginx routes `/` to the frontend and `/api/` to the logging API. Set `AUTH_SERVICE_URL` in `.env` (e.g. `https://auth.alfares.cz`) so the admin login uses your auth-microservice.
 
 ### Testing admin panel
 
 1. Ensure **auth-microservice** is running (e.g. on prod: start it or use existing deployment).
 2. Create a test user: in auth-microservice run `./scripts/create-test-user.sh` (uses `TEST_EMAIL`/`TEST_PASSWORD` from auth-microservice `.env`). On production (e.g. `ssh statex`): `cd auth-microservice && ./scripts/create-test-user.sh`.
-3. Open `https://${DOMAIN}/admin/` (e.g. <https://logging.statex.cz/admin/>), sign in with the credentials from auth-microservice `.env` (TEST_EMAIL / TEST_PASSWORD). Then check statistics, services list, and log history with filters.
+3. Open `https://${DOMAIN}/admin/` (e.g. <https://logging.alfares.cz/admin/>), sign in with the credentials from auth-microservice `.env` (TEST_EMAIL / TEST_PASSWORD). Then check statistics, services list, and log history with filters.
 
 ### SSL (Let's Encrypt)
 
@@ -399,7 +399,7 @@ Deployment uses nginx-microservice blue/green flow. SSL certificates are issued 
 
 1. On first deploy, a temporary self-signed certificate may be created so nginx can start.
 2. `ensure-infrastructure.sh` (run during deploy) detects temporary certs (valid &lt; 30 days) and requests a real certificate via certbot: `request-cert.sh <domain> <email>`.
-3. Set `CERTBOT_EMAIL` in **nginx-microservice** `.env` (e.g. `admin@statex.cz`) so Let's Encrypt can contact you. Optionally set `certbot_email` in the service registry for this domain.
+3. Set `CERTBOT_EMAIL` in **nginx-microservice** `.env` (e.g. `admin@alfares.cz`) so Let's Encrypt can contact you. Optionally set `certbot_email` in the service registry for this domain.
 
 ## Log Storage
 
