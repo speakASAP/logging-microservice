@@ -25,7 +25,7 @@
 | SERVICE_NAME | logging-microservice |
 | PORT | 3367 |
 | LOG_LEVEL | info |
-| LOG_STORAGE_PATH | ./logs |
+| LOG_STORAGE_PATH | ./logs (pod filesystem — no PVC; logs lost on pod restart) |
 | LOG_ROTATION_MAX_SIZE | 100m |
 | LOG_ROTATION_MAX_FILES | 10 |
 | LOG_TIMESTAMP_FORMAT | YYYY-MM-DD HH:mm:ss |
@@ -33,12 +33,16 @@
 | AUTH_SERVICE_URL | http://host.k3s.internal:3370 (transitional until auth migrates to K8s) |
 | PAYMENT_SERVICE_URL | http://host.k3s.internal:3468 (transitional) |
 
+> `AUTH_SERVICE_URL` and `PAYMENT_SERVICE_URL` are present in the ConfigMap as transitional values; they are used for cross-service webhook routing. Remove once migrated.
+
 ## Secrets (Vault → ExternalSecret → K8s Secret)
 | Variable | Vault path |
 |----------|-----------|
 | PAYMENT_API_KEY | secret/prod/logging-microservice |
 | PAYMENT_APPLICATION_ID | secret/prod/logging-microservice |
 | PAYMENT_WEBHOOK_API_KEY | secret/prod/logging-microservice |
+
+> These credentials exist because this service handles payment webhook signature verification in addition to logging.
 
 ## API Endpoints
 | Method | Path | Description |
