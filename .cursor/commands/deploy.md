@@ -1,51 +1,59 @@
-# Production Deployment
+# Deploy logging-microservice to Production
 
-## Task: Deploy logging-microservice on production
+## Prerequisites
+- SSH access to the production server (k3s cluster)
+- `kubectl` configured for the `statex-apps` namespace
+- Docker daemon running with `localhost:5000` registry accessible
 
-## Quick Deployment
+## Deployment
+
+Run from the project root on the production server:
 
 ```bash
-# Load environment variables from .env
-source .env
-SERVICE_NAME=${SERVICE_NAME:-logging-microservice}
-DOMAIN=${DOMAIN:-logging.example.com}
-PORT=${PORT:-3367}
-PROJECT_BASE_PATH=${PROJECT_BASE_PATH:-/home/user}
-SSH_HOST=${SSH_HOST:-user@server}
-NGINX_NETWORK_NAME=${NGINX_NETWORK_NAME:-nginx-network}
-
-# 1. Pull latest code
-ssh ${SSH_HOST} "cd ${PROJECT_BASE_PATH}/logging-microservice && git pull origin master"
-
-# 2. Deploy service
-ssh ${SSH_HOST} "cd ${PROJECT_BASE_PATH}/logging-microservice && ./scripts/deploy.sh"
-
-# 3. Register domain (if not exists)
-ssh ${SSH_HOST} "cd ${PROJECT_BASE_PATH}/nginx-microservice && ./scripts/add-domain.sh ${DOMAIN} ${SERVICE_NAME} ${PORT} admin@${DOMAIN#*.}"
-
-# 4. Fix nginx proxy_pass if needed
-ssh ${SSH_HOST} "sed -i 's|proxy_pass \$backend_api/api/;|proxy_pass \$backend_api;|' ${PROJECT_BASE_PATH}/nginx-microservice/nginx/conf.d/${DOMAIN}.conf"
-
-# 5. Copy certificate if add-domain failed
-ssh ${SSH_HOST} "cd ${PROJECT_BASE_PATH}/nginx-microservice && mkdir -p certificates/${DOMAIN} && docker exec nginx-certbot cat /etc/letsencrypt/live/${DOMAIN}/fullchain.pem > certificates/${DOMAIN}/fullchain.pem && docker exec nginx-certbot cat /etc/letsencrypt/live/${DOMAIN}/privkey.pem > certificates/${DOMAIN}/privkey.pem && chmod 600 certificates/${DOMAIN}/privkey.pem"
-
-# 6. Reload nginx
-ssh ${SSH_HOST} "docker exec nginx-microservice nginx -t && docker exec nginx-microservice nginx -s reload"
-
-# 7. Verify deployment
-ssh ${SSH_HOST} "curl -s https://${DOMAIN}/health && docker run --rm --network ${NGINX_NETWORK_NAME} alpine/curl:latest curl -s http://${SERVICE_NAME}:${PORT}/health"
+./scripts/deploy.sh
 ```
 
-## Success Criteria
+This script performs:
+1. `git pull` (production only)
+2. `docker build` multi-stage → tagged `localhost:5000/logging-microservice:latest`
+3. `docker push localhost:5000/logging-microservice:latest`
+4. `kubectl set image deployment/logging-microservice logging-microservice=localhost:5000/logging-microservice:latest -n statex-apps`
+5. `kubectl rollout status deployment/logging-microservice -n statex-apps`
+6. Health check: `curl /health`
 
-- Service accessible: `https://${DOMAIN}/health` returns success
-- Internal access: `http://${SERVICE_NAME}:${PORT}/health` returns success
-- No errors in logs: `docker compose logs logging-service | grep -i error`
+## Secrets Management
 
-## Notes
+All secrets are managed via **HashiCorp Vault** — never in `.env` files or source code.
 
-- Port: ${PORT:-3367} (configured in `.env`)
-- Internal URL: `http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}`
-- External URL: `https://${DOMAIN}`
-- Service registry: `${PROJECT_BASE_PATH:-/home/user}/nginx-microservice/service-registry/${SERVICE_NAME:-logging-microservice}.json`
-- Environment: `.env` file in project root (SERVICE_NAME, DOMAIN, PORT, etc.)
+- Vault path: `secret/prod/logging-microservice`
+- External Secrets Operator syncs to K8s Secret `logging-microservice-secret` every 5 minutes
+- To add/rotate a secret: update in Vault; ESO auto-syncs within 5 min
+- Force immediate sync if needed:
+  ```bash
+  kubectl annotate externalsecret logging-microservice-secret -n statex-apps \
+    force-sync=$(date +%s) --overwrite
+  ```
+
+## Non-secret Configuration
+
+Lives in `k8s/configmap.yaml`. To update:
+
+```bash
+kubectl apply -f k8s/configmap.yaml
+kubectl rollout restart deployment/logging-microservice -n statex-apps
+```
+
+## Monitoring
+
+```bash
+kubectl logs -f deploy/logging-microservice -n statex-apps
+kubectl get pods -n statex-apps -l app=logging-microservice
+curl https://logging.alfares.cz/health
+```
+
+## Rollback
+
+```bash
+kubectl rollout undo deployment/logging-microservice -n statex-apps
+kubectl rollout status deployment/logging-microservice -n statex-apps
+```

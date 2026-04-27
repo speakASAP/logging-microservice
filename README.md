@@ -307,79 +307,58 @@ curl http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
 
 ## Environment Variables
 
-Create a `.env` file in the project root with the following variables:
+Non-secret configuration is managed via Kubernetes ConfigMap `logging-microservice-config`.
 
-```env
-# Service Configuration
-SERVICE_NAME=logging-microservice
-DOMAIN=logging.example.com
+| Variable | Default | Description |
+|----------|---------|-------------|
+| NODE_ENV | production | Runtime environment |
+| PORT | 3367 | Service port |
+| LOG_LEVEL | info | Logging verbosity (info / warn / error) |
+| LOG_STORAGE_PATH | ./logs | Log file directory (pod filesystem — no PVC) |
+| LOG_ROTATION_MAX_SIZE | 100m | Max size per log file |
+| LOG_ROTATION_MAX_FILES | 10 | Number of rotated files to retain |
+| LOG_TIMESTAMP_FORMAT | YYYY-MM-DD HH:mm:ss | Timestamp format in log files |
+| CORS_ORIGIN | * | Allowed CORS origins |
+| AUTH_SERVICE_URL | http://host.k3s.internal:3370 | Auth service (transitional) |
+| PAYMENT_SERVICE_URL | http://host.k3s.internal:3468 | Payment service (transitional) |
 
-# Web UI (admin panel login and frontend port)
-AUTH_SERVICE_URL=https://auth.example.com
-FRONTEND_PORT=3372
+### Secrets (Vault)
 
-# Server Configuration
-PORT=3367
-NODE_ENV=production
-CORS_ORIGIN=*
+Production secrets are **never stored in `.env` files or code**. They are synced from HashiCorp Vault:
 
-# Logging Configuration
-LOG_LEVEL=info
-LOG_STORAGE_PATH=./logs
-LOG_ROTATION_MAX_SIZE=100m
-LOG_ROTATION_MAX_FILES=10
-LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
+- Vault path: `secret/prod/logging-microservice`
+- Synced by External Secrets Operator to K8s Secret `logging-microservice-secret` (every 5 min)
 
-# Network Configuration
-NGINX_NETWORK_NAME=nginx-network
+| Variable | Description |
+|----------|-------------|
+| PAYMENT_API_KEY | Payment provider API key |
+| PAYMENT_APPLICATION_ID | Payment provider application ID |
+| PAYMENT_WEBHOOK_API_KEY | Payment webhook signature key |
 
-# Docker Volume Configuration
-DOCKER_VOLUME_BASE_PATH=/srv/storagebox/docker-volumes
-```
+For local development, copy `.env.example` → `.env` and fill in dev values.
 
 ## Running the Service
 
-### Development
+### Local Development
 
 ```bash
-# Install dependencies
-npm install
-
-# Start in development mode
-npm run start:dev
-```
-
-### Production with Docker
-
-```bash
-# Deploy to production
-./scripts/deploy.sh
-
-# Check status
-./scripts/status.sh
-
-# Update service
-./scripts/update.sh
-```
-
-### Manual Docker Commands
-
-```bash
-# Build image
-docker compose build
-
-# Start service
+cp .env.example .env
+# Fill in dev values (get secrets from Vault: secret/prod/logging-microservice)
 docker compose up -d
-
-# View logs
 docker compose logs -f logging-service
-
-# Stop service
-docker compose down
-
-# Restart service
-docker compose restart logging-service
 ```
+
+### Production (Kubernetes)
+
+Deployment is managed via Kubernetes in `statex-apps` namespace. Run the deploy script on the server:
+
+```bash
+./scripts/deploy.sh
+```
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full deployment documentation.
+
+**Note:** Production secrets are never stored in `.env` files. All secrets come from HashiCorp Vault via External Secrets Operator.
 
 ### Web Interface Access
 
@@ -462,36 +441,25 @@ Other services and applications can use this logging microservice by:
 
 ### Service Discovery
 
-Before integrating, you need to know how to connect to the logging microservice. The connection details are configured in the logging microservice's `.env` file:
+In Kubernetes (`statex-apps` namespace), other services reach this service via:
 
-**To find the service configuration**:
+```
+# Same namespace (most services)
+http://logging-microservice:3367
 
-1. **If you have access to the logging microservice directory**:
+# Cross-namespace
+http://logging-microservice.statex-apps.svc.cluster.local:3367
+```
 
-   ```bash
-   cd /path/to/logging-microservice
-   cat .env | grep -E "SERVICE_NAME|DOMAIN|PORT"
-   ```
+Set the environment variable in the calling service's ConfigMap:
+```
+LOGGING_SERVICE_URL=http://logging-microservice:3367
+```
 
-2. **If you're using Docker**:
-
-   ```bash
-   # Find the service name
-   docker ps | grep logging
-   
-   # Check environment variables
-   docker exec logging-microservice env | grep -E "SERVICE_NAME|PORT"
-   ```
-
-3. **Common configuration values**:
-   - `SERVICE_NAME`: Usually `logging-microservice` (used for Docker network discovery)
-   - `DOMAIN`: External domain (e.g., `logging.example.com`)
-   - `PORT`: Usually `3367` (default port for logging services)
-
-**Connection URLs**:
-
-- **Internal (Docker network)**: `http://${SERVICE_NAME}:${PORT}` (e.g., `http://logging-microservice:3367`)
-- **External (HTTPS)**: `https://${DOMAIN}` (e.g., `https://logging.example.com`)
+For local development with Docker Compose, use the Docker service name:
+```
+LOGGING_SERVICE_URL=http://logging-service:3367
+```
 
 ### Integration Steps
 
@@ -933,147 +901,34 @@ LOGGING_SERVICE_DOMAIN=logging.example.com
 
 ## Production Deployment
 
-### Prerequisites
-
-1. Docker and Docker Compose installed
-2. Access to production server
-3. `${NGINX_NETWORK_NAME:-nginx-network}` Docker network exists (created by nginx-microservice)
-4. nginx-microservice running and configured
-
-### Deployment Steps
-
-#### Step 1: Pull Latest Code
+The service runs as a Kubernetes Deployment in `statex-apps` namespace.
 
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-git pull origin main
-```
-
-#### Step 2: Configure Environment
-
-Ensure `.env` file exists with production values:
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-cat .env  # Verify configuration
-# PORT, SERVICE_NAME, DOMAIN should be set
-```
-
-#### Step 3: Deploy Service
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
+# Full deploy (git pull → docker build → push to localhost:5000 → kubectl rollout)
 ./scripts/deploy.sh
-```
 
-This will:
+# Deploy specific tag
+./scripts/deploy.sh v1.2.3
 
-- Build Docker image
-- Start the service on port ${PORT:-3367} (configured in `.env`)
-- Connect to ${NGINX_NETWORK_NAME:-nginx-network}
-- Run health checks
-
-#### Step 4: Register with nginx-microservice
-
-The service needs to be registered in nginx-microservice for external access:
-
-1. **Service Registry** (already configured):
-   - File: `${PROJECT_BASE_PATH:-/home/user}/nginx-microservice/service-registry/${SERVICE_NAME:-logging-microservice}.json`
-   - Contains service configuration for blue/green deployment
-
-2. **Register Domain** (if not already done):
-
-   ```bash
-   cd ${PROJECT_BASE_PATH:-/home/user}/nginx-microservice
-   ./scripts/add-domain.sh ${DOMAIN} ${SERVICE_NAME:-logging-microservice} ${PORT:-3367} admin@${DOMAIN#*.}
-   ```
-
-   This will:
-   - Create nginx configuration
-   - Request SSL certificate from Let's Encrypt
-   - Configure HTTPS access
-
-3. **Verify Domain Registration**:
-
-   ```bash
-   # Check nginx config
-   docker exec nginx-microservice nginx -t
-   
-   # Test external access
-   curl https://${DOMAIN}/health
-   ```
-
-#### Step 5: Verify Deployment
-
-```bash
-# Check service status
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-./scripts/status.sh
-
-# Test internal access
-docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
-  curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
-
-# Test external access
-curl https://${DOMAIN}/health
+# Rollback
+kubectl rollout undo deployment/logging-microservice -n statex-apps
 ```
 
 ### Access Points
 
-The service is accessible via:
+- External: https://logging.alfares.cz
+- Internal (K8s): http://logging-microservice:3367
+- Health: https://logging.alfares.cz/health
 
-1. **Internal Access** (within Docker network):
-   - URL: `http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}` (configured in `.env`)
-   - Used by other microservices on the same network
-   - No SSL required (internal network)
-
-2. **External Access** (via HTTPS):
-   - URL: `https://${DOMAIN}` (configured in `.env`)
-   - Public internet access
-   - SSL certificate managed by nginx-microservice
-   - Certificate auto-renewal via Let's Encrypt
-
-### Network Configuration
-
-The service must be on the `${NGINX_NETWORK_NAME:-nginx-network}` Docker network to be accessible by other microservices. The docker-compose.yml automatically connects to this network.
-
-To verify network connection:
+### Kubernetes Resources
 
 ```bash
-docker network inspect ${NGINX_NETWORK_NAME:-nginx-network} | grep ${SERVICE_NAME:-logging-microservice}
+kubectl get all -n statex-apps -l app=logging-microservice
+kubectl get externalsecret logging-microservice-secret -n statex-apps
+kubectl get configmap logging-microservice-config -n statex-apps
 ```
 
-### Service Registry
-
-The service is registered in nginx-microservice's service registry for blue/green deployment support:
-
-- **Registry File**: `${PROJECT_BASE_PATH:-/home/user}/nginx-microservice/service-registry/${SERVICE_NAME:-logging-microservice}.json`
-- **State File**: `${PROJECT_BASE_PATH:-/home/user}/nginx-microservice/state/${SERVICE_NAME:-logging-microservice}.json`
-
-The registry contains:
-
-- Service name and paths
-- Container configuration
-- Health check endpoints
-- Port configuration (${PORT:-3367}, configured in `.env`)
-
-### Blue/Green Deployment
-
-The service supports blue/green deployment via nginx-microservice:
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/nginx-microservice
-./scripts/blue-green/deploy.sh ${SERVICE_NAME:-logging-microservice}
-```
-
-This will:
-
-1. Build and start new deployment (green)
-2. Run health checks
-3. Switch traffic to new deployment
-4. Monitor and cleanup old deployment
-
-See [nginx-microservice Blue/Green Deployment Guide](https://github.com/speakASAP/nginx-microservice/blob/master/docs/BLUE_GREEN_DEPLOYMENT.md) for details.
+Full deployment documentation: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ## Troubleshooting
 
