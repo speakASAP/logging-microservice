@@ -1,414 +1,151 @@
-# Logging Microservice - Production Deployment Guide
+# Deployment Guide — logging-microservice
 
 ## Overview
 
-This guide covers deploying the logging microservice to production.
+`logging-microservice` runs as a Kubernetes Deployment in the `statex-apps` namespace.
+Secrets are managed via HashiCorp Vault → External Secrets Operator → Kubernetes Secret.
+TLS is handled automatically by cert-manager (Let's Encrypt).
 
-## Prerequisites
+## Architecture
 
-1. **Access to Production Server**:
-   - SSH access to production server (e.g. `ssh sgipreal` for sgipreal production)
-   - Configure `SSH_HOST` in `.env` if needed
+| Component | Value |
+|-----------|-------|
+| Namespace | `statex-apps` |
+| Deployment | `logging-microservice` (1 replica, RollingUpdate) |
+| Image | `localhost:5000/logging-microservice:latest` |
+| Service | ClusterIP :3367 |
+| Ingress | logging.alfares.cz (TLS via cert-manager) |
+| ConfigMap | `logging-microservice-config` |
+| K8s Secret | `logging-microservice-secret` (synced from Vault) |
 
-2. **Required Infrastructure**:
-   - Docker and Docker Compose installed
-   - `${NGINX_NETWORK_NAME:-nginx-network}` Docker network exists (created by nginx-microservice)
-   - Sufficient disk space for logs
+## Kubernetes Manifests
 
-3. **Project Location**:
-   - Production: `${PROJECT_BASE_PATH:-/home/user}/logging-microservice` (configured in `.env`)
-   - Local: Your local development path
+| File | Purpose |
+|------|---------|
+| `k8s/deployment.yaml` | Deployment spec (replicas, image, probes, resources) |
+| `k8s/service.yaml` | ClusterIP Service :3367 |
+| `k8s/ingress.yaml` | Ingress for logging.alfares.cz with TLS |
+| `k8s/configmap.yaml` | Non-secret environment variables |
+| `k8s/external-secret.yaml` | Vault → K8s Secret sync definition |
 
-## Initial Deployment
-
-### Step 1: Clone/Setup Repository
-
-If the repository doesn't exist on production:
-
+Apply all at once:
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}
-git clone <repository-url> logging-microservice
-cd logging-microservice
+kubectl apply -f k8s/ -n statex-apps
 ```
 
-Or if using existing directory:
+## Secrets (Vault)
 
+**Production secrets are never stored in `.env` files, ConfigMaps, or code.**
+All secrets live at `secret/prod/logging-microservice` in Vault and are synced automatically.
+
+| Variable | Purpose |
+|----------|---------|
+| PAYMENT_API_KEY | Payment provider authentication |
+| PAYMENT_APPLICATION_ID | Payment provider app ID |
+| PAYMENT_WEBHOOK_API_KEY | Webhook signature verification |
+
+External Secrets Operator syncs every 5 minutes. To force immediate sync:
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-git pull origin main
+kubectl annotate externalsecret logging-microservice-secret -n statex-apps \
+  force-sync=$(date +%s) --overwrite
 ```
 
-### Step 2: Configure Environment
-
-Create `.env` file:
-
+Verify sync status:
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-cp .env.example .env
-# Edit .env with production values
-nano .env
+kubectl describe externalsecret logging-microservice-secret -n statex-apps
+kubectl get secret logging-microservice-secret -n statex-apps
 ```
 
-Required environment variables:
+## Non-secret Configuration
 
-```env
-# Service Configuration
-SERVICE_NAME=logging-microservice
-DOMAIN=logging.example.com
-
-# Server Configuration
-PORT=3367
-NODE_ENV=production
-CORS_ORIGIN=*
-
-# Logging Configuration
-LOG_LEVEL=info
-LOG_STORAGE_PATH=./logs
-LOG_ROTATION_MAX_SIZE=100m
-LOG_ROTATION_MAX_FILES=10
-LOG_TIMESTAMP_FORMAT=YYYY-MM-DD HH:mm:ss
-
-# Network Configuration
-NGINX_NETWORK_NAME=nginx-network
-
-# Docker Volume Configuration
-DOCKER_VOLUME_BASE_PATH=/srv/storagebox/docker-volumes
+All non-secret config is in `k8s/configmap.yaml`. To update a config value:
+```bash
+# Edit k8s/configmap.yaml, then:
+kubectl apply -f k8s/configmap.yaml
+kubectl rollout restart deployment/logging-microservice -n statex-apps
+kubectl rollout status deployment/logging-microservice -n statex-apps
 ```
 
-### Step 3: Verify Network
-
-Ensure network exists:
+## Deploying
 
 ```bash
-docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
-```
-
-If it doesn't exist, start nginx-microservice first:
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/nginx-microservice
-docker compose up -d
-```
-
-### Step 4: Deploy
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
+# Full deploy: git pull → build → push to localhost:5000 → kubectl rollout
 ./scripts/deploy.sh
+
+# Deploy a specific tag
+./scripts/deploy.sh v1.2.3
 ```
 
-The deployment script will:
+The script handles: git sync (production), docker build, push to localhost:5000, kubectl set image, rollout wait, health check.
 
-- Check for .env file
-- Verify nginx-network exists
-- Create logs directory
-- Build Docker image
-- Start the service
-- Verify health
-
-### Step 5: Verify Deployment
+## Rollback
 
 ```bash
-# Check status
-./scripts/status.sh
-
-# Test health endpoint
-curl http://localhost:${PORT:-3367}/health  # PORT configured in .env
-
-# Test from another container
-docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
-  curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
+kubectl rollout undo deployment/logging-microservice -n statex-apps
+kubectl rollout status deployment/logging-microservice -n statex-apps
 ```
 
-## Updating the Service
-
-### Method 1: Using Update Script (Recommended)
+## Monitoring & Logs
 
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-./scripts/update.sh
+# Live pod logs
+kubectl logs -f deploy/logging-microservice -n statex-apps
+
+# Pod status and restarts
+kubectl get pods -n statex-apps -l app=logging-microservice
+
+# Pod details and events (useful for startup failures)
+kubectl describe pod -n statex-apps -l app=logging-microservice
+
+# External health check
+curl https://logging.alfares.cz/health
+
+# Resource usage
+kubectl top pod -n statex-apps -l app=logging-microservice
 ```
 
-### Method 2: Manual Update
+Log files rotate daily on the pod filesystem (`/app/logs`). Retention: 10 files × 100 MB max each.
+
+## Integration — Service URL
+
+Other services call this service via:
+```
+# Within statex-apps namespace
+http://logging-microservice:3367/api/logs
+
+# Cross-namespace
+http://logging-microservice.statex-apps.svc.cluster.local:3367/api/logs
+```
+
+Set `LOGGING_SERVICE_URL=http://logging-microservice:3367` in the calling service's ConfigMap.
+
+## Local Development
+
+Docker Compose is for local development only — not used in production.
 
 ```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-
-# Pull latest code
-git pull origin main
-
-# Rebuild and restart
-docker compose build
+cp .env.example .env
+# Fill in dev values (get from Vault: secret/prod/logging-microservice)
 docker compose up -d
-
-# Verify
-./scripts/status.sh
-```
-
-## Service Management
-
-### Start Service
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-docker compose up -d
-```
-
-### Stop Service
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-docker compose down
-```
-
-### Restart Service
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-docker compose restart logging-service
-```
-
-### View Logs
-
-```bash
-# Service logs
 docker compose logs -f logging-service
-
-# Application logs
-tail -f logs/application-$(date +%Y-%m-%d).log
-
-# Error logs
-tail -f logs/error-$(date +%Y-%m-%d).log
-```
-
-### Check Status
-
-```bash
-./scripts/status.sh
-```
-
-## Integration with flipflop
-
-The flipflop services automatically connect to the logging microservice when:
-
-1. **Logging microservice is running** on ${NGINX_NETWORK_NAME:-nginx-network}
-2. **Environment variable is set** in flipflop `.env`:
-
-   ```env
-   LOGGING_SERVICE_URL=http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}  # Configured in logging-microservice/.env
-   ```
-
-### Verify Integration
-
-From an flipflop service container:
-
-```bash
-# Test connectivity
-docker exec flipflop-api-gateway curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
-
-# Test log ingestion
-docker exec flipflop-api-gateway curl -X POST http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "level": "info",
-    "message": "Test from flipflop",
-    "service": "flipflop-api-gateway"
-  }'
-```
-
-## Monitoring
-
-### Health Checks
-
-The service includes a health check endpoint:
-
-```bash
-curl http://localhost:${PORT:-3367}/health  # PORT configured in .env
-```
-
-Docker also performs automatic health checks (configured in docker-compose.yml).
-
-### Log File Monitoring
-
-Monitor log file sizes:
-
-```bash
-du -sh logs/
-ls -lh logs/
-```
-
-### Disk Space
-
-Monitor disk space for log storage:
-
-```bash
-df -h
 ```
 
 ## Troubleshooting
 
-### Service Won't Start
-
-1. **Check logs**:
-
-   ```bash
-   docker compose logs logging-service
-   ```
-
-2. **Check port availability**:
-
-   ```bash
-   netstat -tuln | grep ${PORT:-3367}  # PORT configured in .env
-   ```
-
-3. **Check Docker network**:
-
-   ```bash
-   docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
-   ```
-
-### Health Check Failing / "Container ... not found"
-
-If the deploy fails with a "Container ... not found" health check error, the service registry may have the wrong shape. Re-run `./scripts/deploy.sh`; it will reset an outdated single-container registry so deploy-smart.sh can recreate it from docker-compose.
-
-1. **Test manually** (use the container name from your compose, e.g. backend or logging-service):
-
-   ```bash
-     docker exec <container-name> wget -q -O- http://localhost:${PORT:-3367}/health
-   ```
-
-2. **Check service logs**:
-
-   ```bash
-   docker compose logs logging-service | tail -50
-   ```
-
-3. **Restart service**:
-
-   ```bash
-   docker compose restart logging-service
-   ```
-
-### Logs Not Being Stored
-
-1. **Check directory permissions**:
-
-   ```bash
-   ls -la logs/
-   ```
-
-2. **Check disk space**:
-
-   ```bash
-   df -h
-   ```
-
-3. **Check service logs for errors**:
-
-   ```bash
-   docker compose logs logging-service | grep -i error
-   ```
-
-### Network Connectivity Issues
-
-1. **Verify service is on network**:
-
-   ```bash
-   docker network inspect ${NGINX_NETWORK_NAME:-nginx-network} | grep ${SERVICE_NAME:-logging-microservice}
-   ```
-
-2. **Test from another container**:
-
-   ```bash
-   docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
-     curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
-   ```
-
-3. **Reconnect to network**:
-
-   ```bash
-   docker network connect ${NGINX_NETWORK_NAME:-nginx-network} ${SERVICE_NAME:-logging-microservice}
-   ```
-
-## Backup and Maintenance
-
-### Backup Logs
-
-```bash
-cd ${PROJECT_BASE_PATH:-/home/user}/logging-microservice
-tar -czf logs-backup-$(date +%Y%m%d).tar.gz logs/
-# Copy to backup location
-```
-
-### Clean Old Logs
-
-Logs are automatically rotated, but you can manually clean:
-
-```bash
-# Remove logs older than 30 days
-find logs/ -name "*.log" -mtime +30 -delete
-find logs/ -name "*.gz" -mtime +30 -delete
-```
-
-### Log Rotation
-
-Log rotation is handled automatically by winston-daily-rotate-file:
-
-- Daily rotation based on date pattern
-- Maximum file size: 100MB (configurable)
-- Maximum files to keep: 10 (configurable)
-
-Configure in `.env`:
-
-```env
-LOG_ROTATION_MAX_SIZE=100m
-LOG_ROTATION_MAX_FILES=10
-```
+| Problem | Command |
+|---------|---------|
+| Pod not starting | `kubectl describe pod -n statex-apps -l app=logging-microservice` |
+| Secret not synced from Vault | `kubectl describe externalsecret logging-microservice-secret -n statex-apps` |
+| Ingress not routing | `kubectl describe ingress logging-microservice -n statex-apps` |
+| TLS cert not issued | `kubectl describe certificate logging-microservice-tls -n statex-apps` |
+| Image pull error | Check `localhost:5000` registry; re-run `./scripts/deploy.sh` |
+| Logs endpoint 500 | `kubectl logs deploy/logging-microservice -n statex-apps --previous` |
 
 ## Production Checklist
 
-Before deploying to production:
-
-- [ ] `.env` file configured with production values
-- [ ] nginx-network exists and is accessible
-- [ ] Sufficient disk space for logs
-- [ ] Docker and Docker Compose installed
-- [ ] Service tested locally or in staging
-- [ ] Health check endpoint working
-- [ ] Log ingestion working
-- [ ] Log query working
-- [ ] Integration with flipflop verified
-
-## Quick Reference
-
-```bash
-# Deploy
-./scripts/deploy.sh
-
-# Check status
-./scripts/status.sh
-
-# Update
-./scripts/update.sh
-
-# View logs
-docker compose logs -f logging-service
-
-# Restart
-docker compose restart logging-service
-
-# Stop
-docker compose down
-
-# Test
-./scripts/test.sh
-```
-
-## Support
-
-For issues:
-
-1. Check service logs: `docker compose logs logging-service`
-2. Check application logs: `tail -f logs/application-*.log`
-3. Verify network: `docker network inspect nginx-network`
-4. Test health: `curl http://localhost:${PORT:-3367}/health  # PORT configured in .env`
+Before deploying:
+- [ ] `k8s/configmap.yaml` updated with any new non-secret vars
+- [ ] New secrets added to Vault at `secret/prod/logging-microservice`
+- [ ] `k8s/external-secret.yaml` updated if new secret keys added
+- [ ] Build succeeds locally: `docker build -t test .`
+- [ ] `/health` returns 200 after rollout
