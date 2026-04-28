@@ -1,1161 +1,206 @@
 # Logging Microservice
 
-Universal centralized logging service that can be deployed on any server with any domain. Collects, stores, and provides querying capabilities for logs from all microservices and applications. Designed to work seamlessly across different environments and technology stacks.
+Centralized structured logging for the ecosystem. All services send logs here.
 
-## ⚠️ Production-Ready Service
+**Port**: 3367 · **Domain**: https://logging.alfares.cz · **Stack**: NestJS · Winston · Kubernetes `statex-apps`
 
-This service is **production-ready** and should **NOT** be modified directly.
+> This service is a dependency of all other services — API changes require ecosystem-wide review.
 
-- **✅ Allowed**: Use scripts from this service's directory
-- **❌ NOT Allowed**: Modify code, configuration, or infrastructure directly
-- **⚠️ Permission Required**: If you need to modify something, **ask for permission first**
+→ Technical spec (k8s resources, env vars, Vault secrets): [SYSTEM.md](SYSTEM.md)  
+→ Deployment, rollback, secrets, troubleshooting: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-## Implementation Status
+## API
 
-✅ **Complete** - All features implemented and tested. The service is ready for production deployment.
-
-## Features
-
-### Core Functionality
-
-- ✅ **Log Ingestion** - Receive logs from all services via HTTP API (`POST /api/logs`)
-- ✅ **Log Storage** - File-based storage with daily rotation
-- ✅ **Log Querying** - Query logs by service, level, date range (`GET /api/logs/query`)
-- ✅ **Service Tracking** - Track logs per service (`GET /api/logs/services`)
-- ✅ **Health Checks** - Built-in health endpoint (`GET /health`)
-- ✅ **Error Handling** - Comprehensive error handling and fallback mechanisms
-
-### Technical Implementation
-
-- ✅ NestJS framework with TypeScript
-- ✅ Winston logging with daily rotation
-- ✅ Docker containerization
-- ✅ Production-ready configuration
-- ✅ Network integration (nginx-network)
-- ✅ Health checks
-- ✅ CORS support
-
-### Web Interface
-
-- ✅ **Landing page** – Marketing page for potential customers at `https://${DOMAIN}` (root)
-- ✅ **Admin panel** – Login via auth-microservice at `https://${DOMAIN}/admin/`
-- ✅ **Statistics** – Log counts by level (error, warn, info, debug) for the current query
-- ✅ **Services list** – All services that have sent logs (`GET /api/logs/services`)
-- ✅ **Log history** – Filterable table (service, level, date range, limit)
-- ✅ **Docker Compose** – Frontend served at DOMAIN on prod; nginx-microservice routes `/` to frontend and `/api/` to backend
-
-## Technology Stack
-
-- **Framework**: NestJS (TypeScript)
-- **Logging**: Winston
-- **File Rotation**: winston-daily-rotate-file
-- **Container**: Docker
-
-## API Interface
-
-## 🔌 Port Configuration
-
-**Reserved port range for logging-microservice**: 3367, 3372 (33xx shared microservices; 3368=notifications, 3369=payments)
-
-| Service | Host Port | Container Port | .env Variable | Description |
-| ------- | --------- | -------------- | ------------- | ----------- |
-| **Backend (API)** | `${PORT:-3367}` | `${PORT:-3367}` | `PORT` (`.env`) | Logging API (ingest, query, services) |
-| **Frontend (Web UI)** | `${FRONTEND_PORT:-3372}` | `80` | `FRONTEND_PORT` (`.env`) | Landing page and admin panel |
-
-**Note**:
-
-- All ports are configured in `.env`. Set `PORT` (backend) and `FRONTEND_PORT` (frontend) to match this table; defaults are 3367 and 3372.
-- Backend and frontend host ports are exposed on `127.0.0.1` only (localhost) for security.
-- External access is provided via nginx-microservice reverse proxy at `https://${DOMAIN}` (configured in `.env`). Nginx routes `/` to the frontend and `/api/` to the backend.
-
-### Base URLs
-
-**Internal Access** (Docker network):
-
-```text
-http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}
-```
-
-**External Access** (via HTTPS):
-
-```text
-https://${DOMAIN}
-```
-
-**Note**:
-
-- For services on the same Docker network (`${NGINX_NETWORK_NAME:-nginx-network}`), use the internal URL: `http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}` (configured in `.env`)
-- For external/public access, use: `https://${DOMAIN}` (configured in `.env`)
-- The external URL is managed by nginx-microservice with automatic SSL certificate management
-
-### API Endpoints
-
-#### 1. Ingest Log
-
-Send logs to the logging microservice.
-
-**Endpoint**: `POST /api/logs`
-
-**Content-Type**: `application/json`
-
-**Request Body (DTO - Data Transfer Object)**:
-
-The DTO (Data Transfer Object) defines the structure of data that services must send. Required and optional fields:
+### POST /api/logs
 
 ```json
+// Request body
 {
-  "level": "error|warn|info|debug",    // REQUIRED: Log level
-  "message": "Log message",            // REQUIRED: Log message text
-  "service": "service-name",           // REQUIRED: Name of the service sending the log
-  "timestamp": "2024-01-01T00:00:00.000Z",  // OPTIONAL: ISO timestamp (auto-generated if omitted)
-  "metadata": {                         // OPTIONAL: Additional key-value pairs
-    "userId": 123,
-    "action": "login",
-    "ip": "192.168.1.1"
-  }
+  "level": "error|warn|info|debug",     // required
+  "message": "string",                   // required
+  "service": "service-name",             // required
+  "timestamp": "2024-01-01T00:00:00Z",  // optional (auto-set if omitted)
+  "metadata": { "key": "value" }         // optional
 }
+
+// 200 OK
+{ "success": true, "message": "Log ingested successfully" }
+
+// 400 / 500
+{ "success": false, "message": "Failed to ingest log", "error": "..." }
 ```
 
-**Field Details**:
+All services **must** include `duration_ms` in metadata and log every timeout at `error` level.
 
-| Field | Type | Required | Description |
-| ----- | ---- | -------- | ----------- |
-| `level` | enum | ✅ Yes | One of: `"error"`, `"warn"`, `"info"`, `"debug"` |
-| `message` | string | ✅ Yes | The log message (cannot be empty) |
-| `service` | string | ✅ Yes | Service identifier (cannot be empty) |
-| `timestamp` | string | ❌ No | ISO 8601 timestamp (e.g., `"2024-01-01T00:00:00.000Z"`). If omitted, current timestamp is used |
-| `metadata` | object | ❌ No | Additional structured data as key-value pairs |
+### GET /api/logs/query
 
-**Timestamps and request duration (required for analysis)**
-
-All services **must** log **timestamps** and **request/process duration** so that the ecosystem can analyze:
-
-- **Duration of processes** – how long operations take
-- **Timeouts** – which operations hit timeout thresholds
-- **Hanging processes** – requests that never complete (gap between start and next log)
-- **Request duration** – end-to-end request timing for performance and debugging
-
-- **Timestamp**: Prefer sending an explicit `timestamp` (ISO 8601) for each log entry. If omitted, the logging microservice sets the current time at ingest; for accurate ordering and duration analysis, callers should include the time when the event occurred.
-- **Duration**: For requests, jobs, or any process, include in `metadata` at least:
-  - `duration_ms` – elapsed time in milliseconds (e.g. from request start to response, or from job start to completion).
-  - Optionally `started_at` / `finished_at` (ISO 8601) for span-based analysis.
-- **Timeouts**: Log **every timeout as ERROR** (level `error`) so that connectivity issues and slow execution are visible in central logs and can be filtered by level.
-
-**Success Response** (200 OK):
+| Param | Description |
+|-------|-------------|
+| `service` | Filter by service name |
+| `level` | error / warn / info / debug |
+| `startDate` | ISO 8601 |
+| `endDate` | ISO 8601 |
+| `limit` | Max results (default 100) |
 
 ```json
-{
-  "success": true,
-  "message": "Log ingested successfully"
-}
+// 200 OK
+{ "success": true, "data": [...], "count": 1 }
 ```
 
-**Error Response** (400 Bad Request / 500 Internal Server Error):
+### GET /api/logs/services
 
 ```json
-{
-  "success": false,
-  "message": "Failed to ingest log",
-  "error": "Error description"
-}
+{ "success": true, "data": ["svc-a", "svc-b"], "count": 2 }
 ```
 
-**Example Request**:
-
-```bash
-# Port configured in .env: PORT (default: 3367)
-curl -X POST http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "level": "info",
-    "message": "User logged in successfully",
-    "service": "user-service",
-    "metadata": {
-      "userId": 123,
-      "ip": "192.168.1.1"
-    }
-  }'
-```
-
-**Example with Timestamp**:
-
-```bash
-# Port configured in .env: PORT (default: 3367)
-curl -X POST http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "level": "error",
-    "message": "Database connection failed",
-    "service": "database-service",
-    "timestamp": "2024-01-01T12:00:00.000Z",
-    "metadata": {
-      "errorCode": "DB_CONN_001",
-      "retryCount": 3
-    }
-  }'
-```
-
-#### 2. Query Logs
-
-Retrieve logs with optional filtering.
-
-**Endpoint**: `GET /api/logs/query`
-
-**Query Parameters** (all optional):
-
-| Parameter | Type | Description |
-| --------- | ---- | ----------- |
-| `service` | string | Filter by service name |
-| `level` | string | Filter by log level: `error`, `warn`, `info`, `debug` |
-| `startDate` | string | Start date for filtering (ISO 8601 format) |
-| `endDate` | string | End date for filtering (ISO 8601 format) |
-| `limit` | number | Maximum number of logs to return (default: 100) |
-
-**Example Request**:
-
-```bash
-# Port configured in .env: PORT (default: 3367)
-curl "http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs/query?service=user-service&level=error&startDate=2024-01-01&endDate=2024-01-31&limit=100"
-```
-
-**Success Response** (200 OK):
+### GET /health
 
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "level": "error",
-      "message": "Database connection failed",
-      "service": "user-service",
-      "timestamp": "2024-01-01T12:00:00.000Z",
-      "metadata": {
-        "errorCode": "DB_CONN_001"
-      }
-    }
-  ],
-  "count": 1
-}
+{ "success": true, "status": "ok", "timestamp": "...", "service": "logging-microservice" }
 ```
 
-**Error Response** (500 Internal Server Error):
+## Integration
 
-```json
-{
-  "success": false,
-  "message": "Failed to query logs",
-  "error": "Error description"
-}
-```
+### Service URL
 
-#### 3. Get Services
-
-List all services that have sent logs.
-
-**Endpoint**: `GET /api/logs/services`
-
-**Example Request**:
-
-```bash
-# Port configured in .env: PORT (default: 3367)
-curl http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/api/logs/services
-```
-
-**Success Response** (200 OK):
-
-```json
-{
-  "success": true,
-  "data": ["user-service", "product-service", "order-service"],
-  "count": 3
-}
-```
-
-**Error Response** (500 Internal Server Error):
-
-```json
-{
-  "success": false,
-  "message": "Failed to get services",
-  "error": "Error description"
-}
-```
-
-#### 4. Health Check
-
-Check if the logging microservice is running and healthy.
-
-**Endpoint**: `GET /health`
-
-**Example Request**:
-
-```bash
-# Port configured in .env: PORT (default: 3367)
-curl http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
-```
-
-**Success Response** (200 OK):
-
-```json
-{
-  "success": true,
-  "status": "ok",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "service": "logging-microservice"
-}
-```
-
-## Environment Variables
-
-Non-secret configuration is managed via Kubernetes ConfigMap `logging-microservice-config`.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| NODE_ENV | production | Runtime environment |
-| PORT | 3367 | Service port |
-| LOG_LEVEL | info | Logging verbosity (info / warn / error) |
-| LOG_STORAGE_PATH | ./logs | Log file directory (pod filesystem — no PVC) |
-| LOG_ROTATION_MAX_SIZE | 100m | Max size per log file |
-| LOG_ROTATION_MAX_FILES | 10 | Number of rotated files to retain |
-| LOG_TIMESTAMP_FORMAT | YYYY-MM-DD HH:mm:ss | Timestamp format in log files |
-| CORS_ORIGIN | * | Allowed CORS origins |
-| AUTH_SERVICE_URL | http://host.k3s.internal:3370 | Auth service (transitional) |
-| PAYMENT_SERVICE_URL | http://host.k3s.internal:3468 | Payment service (transitional) |
-
-### Secrets (Vault)
-
-Production secrets are **never stored in `.env` files or code**. They are synced from HashiCorp Vault:
-
-- Vault path: `secret/prod/logging-microservice`
-- Synced by External Secrets Operator to K8s Secret `logging-microservice-secret` (every 5 min)
-
-| Variable | Description |
-|----------|-------------|
-| PAYMENT_API_KEY | Payment provider API key |
-| PAYMENT_APPLICATION_ID | Payment provider application ID |
-| PAYMENT_WEBHOOK_API_KEY | Payment webhook signature key |
-
-For local development, copy `.env.example` → `.env` and fill in dev values.
-
-## Running the Service
-
-### Local Development
-
-```bash
-cp .env.example .env
-# Fill in dev values (get secrets from Vault: secret/prod/logging-microservice)
-docker compose up -d
-docker compose logs -f logging-service
-```
-
-### Production (Kubernetes)
-
-Deployment is managed via Kubernetes in `statex-apps` namespace. Run the deploy script on the server:
-
-```bash
-./scripts/deploy.sh
-```
-
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full deployment documentation.
-
-**Note:** Production secrets are never stored in `.env` files. All secrets come from HashiCorp Vault via External Secrets Operator.
-
-### Web Interface Access
-
-- **Landing page**: `https://${DOMAIN}` (prod) or `http://localhost:${FRONTEND_PORT:-3372}` (local)
-- **Admin panel**: `https://${DOMAIN}/admin/` – login with auth-microservice (email/password). After login you see statistics, services list, and log history with filters (service, level, date range, limit).
-- **Production**: Run `./scripts/deploy.sh` from the logging-microservice directory (or from nginx-microservice: `./scripts/blue-green/deploy-smart.sh logging-microservice`). Nginx routes `/` to the frontend and `/api/` to the logging API. Set `AUTH_SERVICE_URL` in `.env` (e.g. `https://auth.alfares.cz`) so the admin login uses your auth-microservice.
-
-### Testing admin panel
-
-1. Ensure **auth-microservice** is running (e.g. on prod: start it or use existing deployment).
-2. Create a test user: in auth-microservice run `./scripts/create-test-user.sh` (uses `TEST_EMAIL`/`TEST_PASSWORD` from auth-microservice `.env`). On production (e.g. `ssh statex`): `cd auth-microservice && ./scripts/create-test-user.sh`.
-3. Open `https://${DOMAIN}/admin/` (e.g. <https://logging.alfares.cz/admin/>), sign in with the credentials from auth-microservice `.env` (TEST_EMAIL / TEST_PASSWORD). Then check statistics, services list, and log history with filters.
-
-### SSL (Let's Encrypt)
-
-Deployment uses nginx-microservice blue/green flow. SSL certificates are issued by **Let's Encrypt** (not self-signed):
-
-1. On first deploy, a temporary self-signed certificate may be created so nginx can start.
-2. `ensure-infrastructure.sh` (run during deploy) detects temporary certs (valid &lt; 30 days) and requests a real certificate via certbot: `request-cert.sh <domain> <email>`.
-3. Set `CERTBOT_EMAIL` in **nginx-microservice** `.env` (e.g. `admin@alfares.cz`) so Let's Encrypt can contact you. Optionally set `certbot_email` in the service registry for this domain.
-
-## Log Storage
-
-Logs are stored in the following structure:
-
-```text
-logs/
-  ├── application-YYYY-MM-DD.log  # All logs (rotated daily, JSON format)
-  ├── error-YYYY-MM-DD.log         # Error logs only (rotated daily, JSON format)
-  ├── service-name.log              # Service-specific logs (JSON format)
-  └── service-name.human.log        # Service-specific logs (human-readable format)
-```
-
-### Log Formats
-
-The service stores logs in **two formats**:
-
-1. **JSON Format** (`service-name.log`):
-   - Structured JSON format for automated analysis
-   - One JSON object per line
-   - Easy to parse programmatically
-   - Used by query API endpoints
-
-2. **Human-Readable Format** (`service-name.human.log`):
-   - Easy to read with `tail`, `grep`, `less`
-   - Format: `[YYYY-MM-DD HH:mm:ss] [LEVEL] [SERVICE] message | metadata`
-   - Example: `[2024-01-01 12:00:00] [INFO ] [user-service      ] User logged in | {"userId":123}`
-
-Log files are automatically rotated:
-
-- Daily rotation based on date pattern
-- Maximum file size: 100MB (configurable)
-- Maximum files to keep: 10 (configurable)
-
-## Integration Guide
-
-### Overview
-
-The Logging Microservice is designed to be a **universal centralized logging solution** that can be used by any service or application. It provides a simple HTTP API for log ingestion and querying, making it easy to integrate into any technology stack.
-
-**Key Benefits**:
-
-- ✅ **Universal** - Works with any programming language or framework
-- ✅ **Simple** - HTTP REST API, no complex protocols
-- ✅ **Flexible** - Configurable service name, domain, and ports
-- ✅ **Reliable** - File-based storage with automatic rotation
-- ✅ **Queryable** - Search and filter logs by service, level, date range
-- ✅ **Production-ready** - Error handling, health checks, and monitoring
-- ✅ **Timestamps and duration** - Callers must log timestamps and request/process duration (`duration_ms`, optional `started_at`/`finished_at`) for analysis of timeouts, hanging processes, and request duration
-
-### How Other Services Use This Microservice
-
-Other services and applications integrate with this logging microservice to:
-
-Other services and applications can use this logging microservice by:
-
-1. **Sending logs via HTTP POST** - Services send log entries to the microservice API
-2. **Querying logs via HTTP GET** - Services can query logs for debugging and monitoring
-3. **Service discovery** - Services automatically discover the logging service via Docker network or environment variables
-
-### Service Discovery
-
-In Kubernetes (`statex-apps` namespace), other services reach this service via:
+Set `LOGGING_SERVICE_URL` in the calling service's `k8s/configmap.yaml`:
 
 ```
-# Same namespace (most services)
+# Same namespace (statex-apps) — preferred
 http://logging-microservice:3367
 
 # Cross-namespace
 http://logging-microservice.statex-apps.svc.cluster.local:3367
+
+# External / non-Kubernetes
+https://logging.alfares.cz
 ```
 
-Set the environment variable in the calling service's ConfigMap:
-```
-LOGGING_SERVICE_URL=http://logging-microservice:3367
-```
-
-For local development with Docker Compose, use the Docker service name:
-```
-LOGGING_SERVICE_URL=http://logging-service:3367
-```
-
-### Integration Steps
-
-To integrate your service with the logging microservice, follow these steps:
-
-#### 1. Network Configuration
-
-Ensure your service is on the same Docker network as the logging microservice. The network name is configurable via `NGINX_NETWORK_NAME` environment variable (default: `nginx-network`).
-
-```yaml
-# In your service's docker-compose.yml
-services:
-  your-service:
-    # ... your service configuration
-    networks:
-      - ${NGINX_NETWORK_NAME:-nginx-network}
-
-networks:
-  ${NGINX_NETWORK_NAME:-nginx-network}:
-    external: true
-    name: ${NGINX_NETWORK_NAME:-nginx-network}
-```
-
-**Note**: Replace `${NGINX_NETWORK_NAME:-nginx-network}` with the actual network name if you're using a different one. The logging microservice uses the value from its `.env` file.
-
-#### 2. Service Configuration
-
-Configure your service to connect to the logging microservice. You have two options:
-
-**Option A: Direct Service Name (Recommended for Docker networks)**
-
-If your service is on the same Docker network, use the service name directly:
-
-```env
-# In your service's .env file
-LOGGING_SERVICE_URL=http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}
-```
-
-**Option B: External URL (For services outside Docker network)**
-
-If your service is outside the Docker network, use the external HTTPS URL:
-
-```env
-# In your service's .env file
-LOGGING_SERVICE_URL=https://${DOMAIN}
-```
-
-**Option C: Environment Variables (Most Flexible)**
-
-You can also configure individual components:
-
-```env
-# In your service's .env file
-LOGGING_SERVICE_NAME=logging-microservice  # Service name from logging-microservice/.env
-LOGGING_SERVICE_PORT=3367                  # Port from logging-microservice/.env
-LOGGING_SERVICE_DOMAIN=logging.example.com # Domain from logging-microservice/.env
-
-# Then construct URL in your code:
-# Internal: http://${LOGGING_SERVICE_NAME}:${LOGGING_SERVICE_PORT}
-# External: https://${LOGGING_SERVICE_DOMAIN}
-```
-
-**Best Practice**: Use `LOGGING_SERVICE_URL` for simplicity, or use individual components if you need to switch between internal/external access dynamically.
-
-#### 3. Send Logs via HTTP POST
-
-Send logs using the API interface. The logging microservice accepts logs from any HTTP client. Here are implementation examples for different languages:
-
-**JavaScript/TypeScript (Node.js/NestJS/Express)**:
+### TypeScript / NestJS
 
 ```typescript
-// utils/logger.ts
-interface LogEntry {
+async function sendLog(entry: {
   level: 'error' | 'warn' | 'info' | 'debug';
   message: string;
   service: string;
-  timestamp?: string;
-  metadata?: Record<string, any>;
-}
-
-async function sendLog(entry: LogEntry): Promise<void> {
-  const loggingServiceUrl = process.env.LOGGING_SERVICE_URL || 
-    `http://${process.env.LOGGING_SERVICE_NAME || 'logging-microservice'}:${process.env.LOGGING_SERVICE_PORT || 3367}`;
-  
+  metadata?: Record<string, unknown>;
+}) {
+  const url = process.env.LOGGING_SERVICE_URL || 'http://logging-microservice:3367';
   try {
-    const response = await fetch(`${loggingServiceUrl}/api/logs`, {
+    await fetch(`${url}/api/logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...entry,
-        timestamp: entry.timestamp || new Date().toISOString(),
-      }),
+      body: JSON.stringify({ ...entry, timestamp: new Date().toISOString() }),
+      signal: AbortSignal.timeout(2000),
     });
-    
-    if (!response.ok) {
-      throw new Error(`Logging service returned ${response.status}`);
-    }
-  } catch (error) {
-    // Fallback to local logging
-    console.error(`[${entry.level.toUpperCase()}] [${entry.service}] ${entry.message}`, entry.metadata);
-  }
-}
-
-// Usage
-await sendLog({
-  level: 'info',
-  message: 'User logged in successfully',
-  service: 'user-service',
-  metadata: { userId: 123, ip: '192.168.1.1' }
-});
-```
-
-**Python (Django/Flask/FastAPI)**:
-
-```python
-# utils/logger.py
-import os
-import requests
-from datetime import datetime
-from typing import Optional, Dict, Literal
-
-LogLevel = Literal['error', 'warn', 'info', 'debug']
-
-def send_log(
-    level: LogLevel,
-    message: str,
-    service: str,
-    metadata: Optional[Dict] = None
-) -> None:
-    """Send log entry to centralized logging microservice."""
-    logging_url = os.getenv('LOGGING_SERVICE_URL')
-    if not logging_url:
-        service_name = os.getenv('LOGGING_SERVICE_NAME', 'logging-microservice')
-        port = os.getenv('LOGGING_SERVICE_PORT', '3367')
-        logging_url = f'http://{service_name}:{port}'
-    
-    try:
-        response = requests.post(
-            f'{logging_url}/api/logs',
-            json={
-                'level': level,
-                'message': message,
-                'service': service,
-                'timestamp': datetime.utcnow().isoformat() + 'Z',
-                'metadata': metadata or {}
-            },
-            headers={'Content-Type': 'application/json'},
-            timeout=2  # Short timeout to avoid blocking
-        )
-        response.raise_for_status()
-    except Exception as e:
-        # Fallback to local logging
-        print(f'[{level.upper()}] [{service}] {message}', metadata or {})
-
-# Usage
-send_log('info', 'User logged in successfully', 'user-service', {'userId': 123})
-```
-
-**cURL / Shell Scripts**:
-
-```bash
-#!/bin/bash
-
-# Load environment variables
-LOGGING_SERVICE_URL=${LOGGING_SERVICE_URL:-http://logging-microservice:3367}
-
-# Function to send log
-send_log() {
-    local level=$1
-    local message=$2
-    local service=$3
-    shift 3
-    local metadata="$@"
-    
-    curl -X POST "${LOGGING_SERVICE_URL}/api/logs" \
-        -H "Content-Type: application/json" \
-        -d "{
-            \"level\": \"${level}\",
-            \"message\": \"${message}\",
-            \"service\": \"${service}\",
-            \"metadata\": {${metadata}}
-        }" \
-        --silent --show-error --fail > /dev/null || \
-        echo "[${level^^}] [${service}] ${message}" >&2
-}
-
-# Usage
-send_log "info" "User logged in successfully" "user-service" "\"userId\": 123, \"ip\": \"192.168.1.1\""
-```
-
-#### 4. Error Handling and Best Practices
-
-**Always implement fallback logging** in case the logging microservice is unavailable:
-
-```typescript
-async function sendLog(entry: LogEntry): Promise<void> {
-  const loggingServiceUrl = process.env.LOGGING_SERVICE_URL || 
-    `http://${process.env.LOGGING_SERVICE_NAME || 'logging-microservice'}:${process.env.LOGGING_SERVICE_PORT || 3367}`;
-  
-  try {
-    const response = await fetch(`${loggingServiceUrl}/api/logs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry),
-      // Important: Set timeout to avoid blocking
-      signal: AbortSignal.timeout(2000), // 2 second timeout
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Logging service returned ${response.status}`);
-    }
-  } catch (error) {
-    // Fallback: log locally (console, file, or both)
-    console.error(`[${entry.level.toUpperCase()}] [${entry.service}] ${entry.message}`, entry.metadata);
-    
-    // Optionally write to local file
-    // fs.appendFileSync('local-logs.log', JSON.stringify(entry) + '\n');
+  } catch {
+    console.error(`[${entry.level}] [${entry.service}] ${entry.message}`, entry.metadata);
   }
 }
 ```
 
-**Best Practices**:
-
-1. **Log timestamps and duration** - Always include `timestamp` (ISO 8601) and, for requests/processes, `duration_ms` (and optionally `started_at`/`finished_at`) in metadata. This is required for analyzing timeouts, hanging processes, and request duration across the ecosystem.
-2. **Use async/non-blocking calls** - Don't block your application waiting for log responses
-3. **Set timeouts** - Use short timeouts (1-2 seconds) to avoid hanging requests
-4. **Implement retries** - For critical logs, implement retry logic (but don't retry forever)
-5. **Fallback logging** - Always have a local fallback (console, file, or both)
-6. **Batch logs** - For high-volume services, consider batching multiple logs in a single request
-7. **Don't log sensitive data** - Never log passwords, tokens, or PII in metadata
-8. **Use appropriate log levels** - Use `error` for errors, `warn` for warnings, `info` for informational, `debug` for debugging
-9. **Include context** - Always include relevant metadata (userId, requestId, etc.) for better debugging
-
-### Real-World Integration Examples
-
-#### Example 1: NestJS/Express Application
+NestJS interceptor (captures `duration_ms` per request):
 
 ```typescript
-// src/common/interceptors/logging.interceptor.ts
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
-    const request = context.switchToHttp().getRequest();
-    const { method, url, ip } = request;
-    const startTime = Date.now();
-    
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const { method, url } = context.switchToHttp().getRequest();
+    const start = Date.now();
     return next.handle().pipe(
-      tap(async () => {
-        const responseTime = Date.now() - startTime;
-        await sendLog({
-          level: 'info',
-          message: `${method} ${url} - ${responseTime}ms`,
-          service: 'api-gateway',
-          metadata: {
-            method,
-            url,
-            ip,
-            responseTime,
-            statusCode: context.switchToHttp().getResponse().statusCode,
-          },
-        });
-      }),
+      tap(() => sendLog({
+        level: 'info',
+        message: `${method} ${url}`,
+        service: process.env.SERVICE_NAME || 'unknown',
+        metadata: { duration_ms: Date.now() - start },
+      }))
     );
   }
 }
 ```
 
-#### Example 2: Express Middleware
+### Python
 
-```typescript
-// middleware/logger.middleware.ts
-import { Request, Response, NextFunction } from 'express';
+```python
+import os, requests
+from datetime import datetime, timezone
 
-export function loggingMiddleware(req: Request, res: Response, next: NextFunction) {
-  const startTime = Date.now();
-  
-  res.on('finish', async () => {
-    const responseTime = Date.now() - startTime;
-    await sendLog({
-      level: res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
-      message: `${req.method} ${req.path} - ${res.statusCode}`,
-      service: 'web-service',
-      metadata: {
-        method: req.method,
-        path: req.path,
-        statusCode: res.statusCode,
-        responseTime,
-        ip: req.ip,
-        userAgent: req.get('user-agent'),
-      },
-    });
-  });
-  
-  next();
+def send_log(level: str, message: str, service: str, metadata: dict = None) -> None:
+    url = os.getenv('LOGGING_SERVICE_URL', 'http://logging-microservice:3367')
+    try:
+        requests.post(f'{url}/api/logs', json={
+            'level': level, 'message': message, 'service': service,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'metadata': metadata or {},
+        }, timeout=2)
+    except Exception:
+        print(f'[{level.upper()}] [{service}] {message}', metadata or {})
+```
+
+### Bash
+
+```bash
+LOGGING_URL=${LOGGING_SERVICE_URL:-http://logging-microservice:3367}
+
+send_log() {  # send_log level message service
+  curl -sf -X POST "${LOGGING_URL}/api/logs" \
+    -H 'Content-Type: application/json' \
+    -d "{\"level\":\"$1\",\"message\":\"$2\",\"service\":\"$3\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+    >/dev/null || echo "[$1] [$3] $2" >&2
 }
 ```
 
-#### Example 3: Error Handler Integration
+### Best Practices
 
-```typescript
-// utils/error-handler.ts
-export async function handleError(error: Error, context: any) {
-  // Log to centralized service
-  await sendLog({
-    level: 'error',
-    message: error.message,
-    service: 'user-service',
-    metadata: {
-      error: error.name,
-      stack: error.stack,
-      ...context,
-    },
-  });
-  
-  // Also log locally for immediate visibility
-  console.error('Error occurred:', error, context);
-}
+- Always include `timestamp` (ISO 8601) and `duration_ms` in metadata
+- Log every timeout as `error` level
+- Set 1–2 s timeout on the logging call — never block your service on it
+- Implement a local fallback (console or file) if this service is unreachable
+- Never log passwords, tokens, or PII in metadata
+- Levels: `error` = needs action · `warn` = should review · `info` = normal flow · `debug` = verbose
+
+## Log Storage
+
+```
+logs/
+├── application-YYYY-MM-DD.log   # all logs, daily rotation, JSON
+├── error-YYYY-MM-DD.log          # errors only, daily rotation, JSON
+├── {service}.log                   # per-service JSON (used by query API)
+└── {service}.human.log             # per-service human-readable
 ```
 
-#### Example 4: Database Operation Logging
+Human-readable format: `[YYYY-MM-DD HH:mm:ss] [LEVEL] [service] message | metadata`
 
-```typescript
-// services/user.service.ts
-async function createUser(userData: UserData) {
-  try {
-    const user = await db.users.create(userData);
-    
-    await sendLog({
-      level: 'info',
-      message: 'User created successfully',
-      service: 'user-service',
-      metadata: {
-        userId: user.id,
-        email: user.email,
-        action: 'user.create',
-      },
-    });
-    
-    return user;
-  } catch (error) {
-    await sendLog({
-      level: 'error',
-      message: 'Failed to create user',
-      service: 'user-service',
-      metadata: {
-        error: error.message,
-        userData: { email: userData.email }, // Don't log full userData for security
-        action: 'user.create',
-      },
-    });
-    throw error;
-  }
-}
-```
+Rotation: daily, max 100 MB per file, 10 files retained. Logs are on the **pod filesystem (no PVC)** — they are lost on pod restart.
 
-### Configuration Summary
-
-**For services on the same Docker network** (recommended):
-
-```env
-LOGGING_SERVICE_URL=http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}
-```
-
-**For services outside Docker network**:
-
-```env
-LOGGING_SERVICE_URL=https://${DOMAIN}
-```
-
-**For flexible configuration**:
-
-```env
-LOGGING_SERVICE_NAME=logging-microservice
-LOGGING_SERVICE_PORT=3367
-LOGGING_SERVICE_DOMAIN=logging.example.com
-# Then construct URL in code based on network location
-```
-
-**Note**:
-
-- Use the **internal Docker network URL** (`http://${SERVICE_NAME}:${PORT}`) for services on the same Docker network - this is faster and doesn't require SSL
-- Use the **external HTTPS URL** (`https://${DOMAIN}`) for services outside the Docker network or for external access
-- The service name, port, and domain are configured in the logging microservice's `.env` file
-
-### Quick Reference for Integration
-
-**Minimum setup to start logging**:
-
-1. **Add to your service's `.env`**:
-
-   ```env
-   LOGGING_SERVICE_URL=http://logging-microservice:3367
-   ```
-
-2. **Send a log** (any language):
-
-   ```bash
-   curl -X POST http://logging-microservice:3367/api/logs \
-     -H "Content-Type: application/json" \
-     -d '{
-       "level": "info",
-       "message": "Service started",
-       "service": "my-service"
-     }'
-   ```
-
-3. **Query logs**:
-
-   ```bash
-   curl "http://logging-microservice:3367/api/logs/query?service=my-service&limit=10"
-   ```
-
-**Common use cases**:
-
-- ✅ **Application logs** - Log all application events, errors, and info (include timestamp and duration where applicable)
-- ✅ **Request logging** - Log HTTP requests/responses in middleware with `duration_ms` and timestamp for timeout/hang analysis
-- ✅ **Error tracking** - Centralize error logs from all services
-- ✅ **Audit logs** - Track user actions and system events
-- ✅ **Debugging** - Query logs by service, level, or time range
-- ✅ **Monitoring** - Aggregate logs from multiple services; use timestamps and duration for timeout, hanging process, and request-duration analysis
-
-**Supported log levels**:
-
-- `error` - Errors that need immediate attention
-- `warn` - Warnings that should be reviewed
-- `info` - Informational messages (default)
-- `debug` - Debug information (verbose)
-
-**API Endpoints Summary**:
-
-- `POST /api/logs` - Send a log entry
-- `GET /api/logs/query` - Query logs with filters
-- `GET /api/logs/services` - List all services that have sent logs
-- `GET /health` - Health check endpoint
-
-## Production Deployment
-
-The service runs as a Kubernetes Deployment in `statex-apps` namespace.
+## Local Development
 
 ```bash
-# Full deploy (git pull → docker build → push to localhost:5000 → kubectl rollout)
-./scripts/deploy.sh
-
-# Deploy specific tag
-./scripts/deploy.sh v1.2.3
-
-# Rollback
-kubectl rollout undo deployment/logging-microservice -n statex-apps
-```
-
-### Access Points
-
-- External: https://logging.alfares.cz
-- Internal (K8s): http://logging-microservice:3367
-- Health: https://logging.alfares.cz/health
-
-### Kubernetes Resources
-
-```bash
-kubectl get all -n statex-apps -l app=logging-microservice
-kubectl get externalsecret logging-microservice-secret -n statex-apps
-kubectl get configmap logging-microservice-config -n statex-apps
-```
-
-Full deployment documentation: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
-## Troubleshooting
-
-### Service Not Starting
-
-```bash
-# Check logs
-docker compose logs logging-service
-
-# Check if port is in use
-# Port configured in .env: PORT (default: 3367)
-netstat -tuln | grep ${PORT:-3367}
-
-# Check Docker network
-docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
-```
-
-### Health Check Failing
-
-```bash
-# Test health endpoint manually
-# Port configured in .env: PORT (default: 3367)
-docker exec ${SERVICE_NAME:-logging-microservice} wget -q -O- http://localhost:${PORT:-3367}/health
-
-# Check service logs
+cp .env.example .env
+# Fill dev values (source from Vault: secret/prod/logging-microservice)
+docker compose up -d
 docker compose logs -f logging-service
 ```
 
-### Logs Not Being Stored
+## Project Structure
 
-```bash
-# Check log directory permissions
-ls -la logs/
-
-# Check disk space
-df -h
-
-# Check service logs for errors
-docker compose logs logging-service | grep -i error
+```
+src/
+├── main.ts
+├── app.module.ts
+├── logs/        # controller, service, dto
+└── health/      # health controller
+scripts/deploy.sh
+k8s/             # kubernetes manifests
+docker-compose.yml  # local dev only
+Dockerfile
 ```
 
-### Network Issues
+## Building & Testing
 
 ```bash
-# Verify service is on network
-docker network inspect ${NGINX_NETWORK_NAME:-nginx-network}
-
-# Test connectivity from another container
-docker run --rm --network ${NGINX_NETWORK_NAME:-nginx-network} alpine/curl:latest \
-  curl -s http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}/health
-```
-
-## Maintenance
-
-### Viewing Logs
-
-```bash
-# View service logs
-docker compose logs -f logging-service
-
-# View application logs
-tail -f logs/application-$(date +%Y-%m-%d).log
-
-# View error logs
-tail -f logs/error-$(date +%Y-%m-%d).log
-
-# View service-specific logs
-tail -f logs/service-name.log
-```
-
-### Updating Service
-
-```bash
-# Pull latest code
-git pull origin main
-
-# Update and restart
-./scripts/update.sh
-```
-
-### Backup Logs
-
-Logs are stored in `./logs/` directory. To backup:
-
-```bash
-tar -czf logs-backup-$(date +%Y%m%d).tar.gz logs/
-```
-
-## Microservice Development
-
-### Project Structure
-
-```text
-logging-microservice/
-├── src/
-│   ├── main.ts              # Application entry point
-│   ├── app.module.ts        # Root module
-│   ├── logs/                # Logs module
-│   │   ├── logs.controller.ts
-│   │   ├── logs.service.ts
-│   │   ├── logs.module.ts
-│   │   └── dto/             # Data transfer objects
-│   └── health/              # Health check
-│       └── health.controller.ts
-├── scripts/                 # Deployment scripts
-│   ├── deploy.sh
-│   ├── status.sh
-│   ├── update.sh
-│   └── test.sh
-├── logs/                    # Log storage (created at runtime)
-├── docker-compose.yml       # Docker configuration
-├── Dockerfile              # Docker image definition
-├── package.json            # Dependencies
-└── README.md               # This file
-```
-
-### Building
-
-```bash
-# Build TypeScript
 npm run build
-
-# Build Docker image
-docker compose build
-```
-
-### Testing
-
-Run the test script:
-
-```bash
+docker build -t localhost:5000/logging-microservice:latest .
+npm test
 ./scripts/test.sh
 ```
-
-Or test manually:
-
-```bash
-# Health check
-# Port configured in .env: PORT (default: 3367)
-curl http://localhost:${PORT:-3367}/health
-
-# Send log
-# Port configured in .env: PORT (default: 3367)
-curl -X POST http://localhost:${PORT:-3367}/api/logs \
-  -H "Content-Type: application/json" \
-  -d '{
-    "level": "info",
-    "message": "Test log",
-    "service": "test-service"
-  }'
-
-# Query logs
-# Port configured in .env: PORT (default: 3367)
-curl "http://localhost:${PORT:-3367}/api/logs/query?service=test-service&limit=10"
-```
-
-Or run unit tests:
-
-```bash
-npm test
-```
-
-## Error Handling
-
-The service implements comprehensive error handling:
-
-- ✅ Try-catch blocks in all service methods
-- ✅ Error logging to Winston
-- ✅ HTTP error responses with proper status codes
-- ✅ Graceful degradation (doesn't crash on errors)
-- ✅ Validation errors handled by NestJS pipes
-
-## Security
-
-Security measures implemented:
-
-- ✅ Input validation via class-validator
-- ✅ CORS configuration
-- ✅ No sensitive data in logs (handled by caller)
-- ✅ File system permissions handled by Docker
-
-## Performance
-
-Performance optimizations:
-
-- ✅ Async log ingestion (non-blocking)
-- ✅ File append operations (efficient)
-- ✅ Winston buffering
-- ✅ Health checks for monitoring
-
-## Monitoring
-
-Monitoring capabilities:
-
-- ✅ Docker health checks
-- ✅ Health endpoint (`/health`)
-- ✅ Service status script (`./scripts/status.sh`)
-- ✅ Log file monitoring
-
-## Notes
-
-Important implementation details:
-
-- **Port**: Service runs on port `${PORT:-3367}` (both container and host, configured in `.env`)
-- **Network**: Must be on `${NGINX_NETWORK_NAME:-nginx-network}` for service discovery
-- **Log Storage**: Logs persist in `./logs/` directory (mounted volume on host filesystem)
-- **Storage Format**: Dual format - JSON (`{service}.log`) and human-readable (`{service}.human.log`)
-- **Database**: No database required (file-based storage)
-- **External Access**: Available via `https://${DOMAIN}` (managed by nginx-microservice, configured in `.env`)
-- **Internal Access**: Available via `http://${SERVICE_NAME:-logging-microservice}:${PORT:-3367}` (Docker network, configured in `.env`)
-- **SSL Certificates**: Managed automatically by nginx-microservice via Let's Encrypt
-- **Future Enhancement**: Can be enhanced with database for better querying if needed
-
-## Success Criteria
-
-The service is considered successful when:
-
-✅ Service starts successfully
-✅ Health check passes
-✅ Log ingestion works
-✅ Log querying works
-✅ Service listing works
-✅ Docker health checks pass
-✅ Integration with other services verified
-✅ Documentation complete
-✅ Deployment scripts ready
-
-## License
-
-Universal logging microservice - can be integrated into any platform or application.
