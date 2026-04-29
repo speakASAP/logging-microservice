@@ -76,10 +76,10 @@ After all internal AI checks and adjustments are complete:
 
 ## Production
 
-Our application consists of 3 microservices in /home/statex/. Access via ssh statex.
+Our application consists of 3 microservices in ~/Documents/Github/. Access via ssh alfares.
 
 nginx-microservice handles blue/green deployments. Use the same nginx and database setup to manage alfares.cz:
-Run: ssh statex && cd nginx-microservice && ./scripts/blue-green/deploy.sh statex.
+Run: ssh alfares && cd nginx-microservice && ./scripts/blue-green/deploy.sh statex.
 
 database-server is the PostgreSQL database for the app.
 
