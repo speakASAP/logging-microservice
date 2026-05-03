@@ -1,8 +1,6 @@
 # CLAUDE.md (logging-microservice)
 
-Ecosystem defaults: sibling [`../CLAUDE.md`](../CLAUDE.md) and [`../shared/docs/PROJECT_AGENT_DOCS_STANDARD.md`](../shared/docs/PROJECT_AGENT_DOCS_STANDARD.md).
-
-Read this repo's `BUSINESS.md` → `SYSTEM.md` → `AGENTS.md` → `TASKS.md` → `STATE.json` first.
+→ Ecosystem: [../shared/CLAUDE.md](../shared/CLAUDE.md) | Reading order: `BUSINESS.md` → `SYSTEM.md` → `AGENTS.md` → `TASKS.md` → `STATE.json`
 
 ---
 
@@ -25,10 +23,4 @@ Read this repo's `BUSINESS.md` → `SYSTEM.md` → `AGENTS.md` → `TASKS.md` �
   "timestamp": "2026-01-01T00:00:00.000Z", "duration_ms": 42 }
 ```
 
-### Quick ops
-```bash
-curl http://logging-microservice:3367/health
-kubectl logs -f deploy/logging-microservice -n statex-apps
-./scripts/deploy.sh
-kubectl get pods -n statex-apps -l app=logging-microservice
-```
+**Ops**: `curl http://logging-microservice:3367/health` · `kubectl logs -f deploy/logging-microservice -n statex-apps` · `./scripts/deploy.sh`
