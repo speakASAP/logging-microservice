@@ -30,10 +30,8 @@
 | LOG_ROTATION_MAX_FILES | 10 |
 | LOG_TIMESTAMP_FORMAT | YYYY-MM-DD HH:mm:ss |
 | CORS_ORIGIN | * |
-| AUTH_SERVICE_URL | http://host.k3s.internal:3370 (transitional until auth migrates to K8s) |
-| PAYMENT_SERVICE_URL | http://host.k3s.internal:3468 (transitional) |
-
-> `AUTH_SERVICE_URL` and `PAYMENT_SERVICE_URL` are present in the ConfigMap as transitional values; they are used for cross-service webhook routing. Remove once migrated.
+| AUTH_SERVICE_URL | http://auth-microservice.statex-apps.svc.cluster.local:3370 |
+| PAYMENT_SERVICE_URL | http://payments-microservice.statex-apps.svc.cluster.local:3468 |
 
 ## Secrets (Vault → ExternalSecret → K8s Secret)
 | Variable | Vault path |
@@ -58,5 +56,5 @@ Cross-namespace: `http://logging-microservice.statex-apps.svc.cluster.local:3367
 
 ## Integrations
 - Depended on by all ecosystem services via `LOGGING_SERVICE_URL`
-- Auth service: `http://host.k3s.internal:3370` (transitional, uses host.k3s.internal until migrated)
-- Payment service: `http://host.k3s.internal:3468` (transitional)
+- Auth service: `http://auth-microservice.statex-apps.svc.cluster.local:3370`
+- Payment service: `http://payments-microservice.statex-apps.svc.cluster.local:3468`
