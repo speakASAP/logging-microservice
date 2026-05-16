@@ -98,21 +98,28 @@ export class LogsService {
 
   async ingest(logEntry: LogEntryDto): Promise<void> {
     try {
+      const resolvedMessage = logEntry.message || logEntry.msg || '(no message)';
       const logData = {
         level: logEntry.level,
-        message: logEntry.message,
+        message: resolvedMessage,
         service: logEntry.service,
         timestamp: logEntry.timestamp || new Date().toISOString(),
+        task_id: logEntry.task_id,
+        project_id: logEntry.project_id,
+        business_id: logEntry.business_id,
+        agent_id: logEntry.agent_id,
+        correlation_id: logEntry.correlation_id,
+        duration_ms: logEntry.duration_ms,
         metadata: logEntry.metadata || {},
       };
 
-      // Write to Winston logger
-      this.logger.log(logEntry.level, logEntry.message, {
+      this.logger.log(logEntry.level, resolvedMessage, {
         service: logEntry.service,
+        task_id: logEntry.task_id,
+        project_id: logEntry.project_id,
         ...logEntry.metadata,
       });
 
-      // Write JSON format to service-specific file
       const serviceLogPath = path.join(
         this.logStoragePath,
         `${logEntry.service}.log`,
@@ -123,7 +130,6 @@ export class LogsService {
         'utf8',
       );
 
-      // Write human-readable format to service-specific human-readable file
       const serviceHumanLogPath = path.join(
         this.logStoragePath,
         `${logEntry.service}.human.log`,
@@ -135,7 +141,6 @@ export class LogsService {
         'utf8',
       );
     } catch (error) {
-      // Log error to console and Winston, but don't throw to avoid breaking the caller
       console.error('Error ingesting log:', error);
       this.logger.error('Error ingesting log', { error: error instanceof Error ? error.message : String(error) });
     }
@@ -147,8 +152,9 @@ export class LogsService {
     startDate?: string;
     endDate?: string;
     limit?: number;
+    taskId?: string;
+    projectId?: string;
   }): Promise<any[]> {
-    // Simple file-based query (can be enhanced with database)
     const logs: any[] = [];
 
     try {
@@ -169,40 +175,30 @@ export class LogsService {
           try {
             const logEntry = JSON.parse(line);
 
-            // Apply filters
-            if (filters.level && logEntry.level !== filters.level) {
-              continue;
-            }
-            if (filters.startDate && logEntry.timestamp < filters.startDate) {
-              continue;
-            }
-            if (filters.endDate && logEntry.timestamp > filters.endDate) {
-              continue;
-            }
+            if (filters.level && logEntry.level !== filters.level) continue;
+            if (filters.startDate && logEntry.timestamp < filters.startDate) continue;
+            if (filters.endDate && logEntry.timestamp > filters.endDate) continue;
+            if (filters.taskId && logEntry.task_id !== filters.taskId) continue;
+            if (filters.projectId && logEntry.project_id !== filters.projectId) continue;
 
             logs.push(logEntry);
 
-            if (logs.length >= (filters.limit || 100)) {
-              break;
-            }
+            if (logs.length >= (filters.limit || 100)) break;
           } catch {
-            // Skip invalid JSON lines
             continue;
           }
         }
 
-        if (logs.length >= (filters.limit || 100)) {
-          break;
-        }
+        if (logs.length >= (filters.limit || 100)) break;
       }
     } catch (error) {
       console.error('Error querying logs:', error);
       this.logger.error('Error querying logs', { error: error instanceof Error ? error.message : String(error) });
     }
 
-    // Sort by timestamp descending
+    // Sort ascending (oldest first) for timeline rendering
     return logs
-      .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+      .sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''))
       .slice(0, filters.limit || 100);
   }
 

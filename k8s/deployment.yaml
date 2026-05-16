@@ -24,7 +24,7 @@ spec:
       containers:
         - name: app
           image: localhost:5000/logging-microservice:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 3367
               name: http
