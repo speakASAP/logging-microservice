@@ -37,6 +37,8 @@ export class LogsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('limit') limit?: number,
+    @Query('task_id') taskId?: string,
+    @Query('project_id') projectId?: string,
   ) {
     try {
       const logs = await this.logsService.query({
@@ -45,6 +47,8 @@ export class LogsController {
         startDate,
         endDate,
         limit: limit ? Number(limit) : 100,
+        taskId,
+        projectId,
       });
       return {
         success: true,

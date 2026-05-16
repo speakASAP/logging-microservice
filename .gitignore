@@ -1,5 +1,10 @@
+# Backup files
 *backup*
+*.backup*
 *bck*
+*.bak*
+*.bak
+*.old
 
 # Dependencies
 node_modules/
@@ -15,6 +20,15 @@ build/
 # Environment variables
 .env*
 !.env.example
+.env
+.venv
+.venv*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -28,6 +42,9 @@ build/
 Thumbs.db
 
 # Logs (keep structure but ignore content)
+# Logs
+logs/
+*.log
 logs/*.log
 logs/*.gz
 logs/*.tar
@@ -36,6 +53,8 @@ logs/*.human.log
 logs/*.json
 logs/**/*
 !logs/.gitkeep
+!src/logs/
+!src/logs/**
 
 # Testing
 coverage/
@@ -51,17 +70,6 @@ secrets/
 **/client_secret*.json
 **/*.apps.googleusercontent.com.json
 
-# --- baseline: secrets-env-artifacts (synced across repos) ---
-
-*.bak*
-# Logs
-logs/
-*.log
-# OS files
-*.bak
-.env
-.venv
-.venv*
 # Security: Never commit keys or certificates
 keys/*
 !keys/README.md
@@ -80,20 +88,11 @@ keys/*
 *.db
 *.sqlite
 *.sqlite3
-# Environments
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+
 # Local configuration
 local_config.py
 local_settings.py
-# Backup files
-*.bak
-*.backup*
-*.old
+
 # Compressed files
 *.zip
 *.tar.gz
