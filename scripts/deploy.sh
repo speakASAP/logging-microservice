@@ -13,6 +13,12 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# shellcheck disable=SC1091
+source "$(dirname "$PROJECT_ROOT")/shared/scripts/load-deploy-phase-timing.sh" "$PROJECT_ROOT" 2>/dev/null \
+  || source "$HOME/Documents/Github/shared/scripts/load-deploy-phase-timing.sh" "$PROJECT_ROOT" \
+  || { echo "Error: deploy timing library not found" >&2; exit 1; }
+deploy_timing_init "logging-microservice"
+
 SERVICE_NAME="logging-microservice"
 NAMESPACE="statex-apps"
 REGISTRY="localhost:5000"
@@ -35,40 +41,45 @@ echo "║      Logging Microservice - Kubernetes Deployment      ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# ── Phase 1: Git sync (production only) ──
 if [ "${NODE_ENV}" = "production" ]; then
-  echo -e "${YELLOW}[1/5] Syncing git...${NC}"
+  deploy_timing_phase_start "Git sync"
+  echo -e "${YELLOW}Syncing git...${NC}"
   cd "$PROJECT_ROOT"
   git fetch origin
   git stash
   git pull origin main
   git stash pop || true
   echo -e "${GREEN}✅ Git synced${NC}"
+  deploy_timing_phase_end "Git sync"
 fi
 
-# ── Phase 2: Build Docker image ───
-echo -e "${YELLOW}[2/5] Building image: ${IMAGE}...${NC}"
+deploy_timing_phase_start "Build image"
+echo -e "${YELLOW}Building image: ${IMAGE}...${NC}"
 docker build -t "$IMAGE" -t "$IMAGE_LATEST" "$PROJECT_ROOT"
 echo -e "${GREEN}✅ Image built${NC}"
+deploy_timing_phase_end "Build image"
 
-# ── Phase 3: Push to local registry ────
-echo -e "${YELLOW}[3/5] Pushing to registry...${NC}"
+deploy_timing_phase_start "Push image"
+echo -e "${YELLOW}Pushing to registry...${NC}"
 docker push "$IMAGE"
 docker push "$IMAGE_LATEST"
 echo -e "${GREEN}✅ Image pushed: ${IMAGE}${NC}"
+deploy_timing_phase_end "Push image"
 
-# ── Phase 4: Update K8s deployment ───
-echo -e "${YELLOW}[4/5] Updating K8s deployment...${NC}"
+deploy_timing_phase_start "Update K8s deployment"
+echo -e "${YELLOW}Updating K8s deployment...${NC}"
 kubectl set image deployment/${SERVICE_NAME} \
   app="${IMAGE}" \
   -n "${NAMESPACE}"
-kubectl rollout status deployment/${SERVICE_NAME} \
-  -n "${NAMESPACE}" \
-  --timeout=120s
-echo -e "${GREEN}✅ Rollout complete${NC}"
+deploy_timing_phase_end "Update K8s deployment"
 
-# ── Phase 5: Health check (Node fetch — slim image has no wget/curl) ────
-echo -e "${YELLOW}[5/5] Verifying health (http://127.0.0.1:${HEALTH_PORT}${HEALTH_PATH})...${NC}"
+deploy_timing_phase_start "Wait for rollout"
+deploy_timing_k8s_rollout_wait kubectl "$SERVICE_NAME" "$NAMESPACE"
+echo -e "${GREEN}✅ Rollout complete${NC}"
+deploy_timing_phase_end "Wait for rollout"
+
+deploy_timing_phase_start "Health check"
+echo -e "${YELLOW}Verifying health (http://127.0.0.1:${HEALTH_PORT}${HEALTH_PATH})...${NC}"
 attempt=1
 while [ "${attempt}" -le "${HEALTH_MAX_ATTEMPTS}" ]; do
   POD=$(kubectl get pod -n "${NAMESPACE}" \
@@ -97,13 +108,11 @@ while [ "${attempt}" -le "${HEALTH_MAX_ATTEMPTS}" ]; do
   attempt=$((attempt + 1))
 done
 echo -e ""
+deploy_timing_phase_end "Health check"
 
-# ── Done ────
-echo -e "${GREEN}"
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║      ✅ Logging Microservice Deployment successful!    ║"
-echo "╚════════════════════════════════════════════════════════╝"
-echo "║  Image:    ${IMAGE}"
-echo "║  Namespace: ${NAMESPACE}"
-echo "║  Pods:     $(kubectl get pods -n ${NAMESPACE} -l app=${SERVICE_NAME} --no-headers | wc -l) running"
-echo -e "${NC}"
+deploy_timing_finish_success "Logging Microservice"
+echo "Image:    ${IMAGE}"
+echo "Namespace: ${NAMESPACE}"
+echo "Pods:     $(kubectl get pods -n ${NAMESPACE} -l app=${SERVICE_NAME} --no-headers | wc -l) running"
+DEPLOY_TIMING_FINISHED=1
+exit 0
