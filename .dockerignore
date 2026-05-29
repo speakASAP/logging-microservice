@@ -1,0 +1,23 @@
+# Docker build context — exclude runtime data and deps (see logs/ ~8GB+)
+node_modules
+dist
+logs
+*.log
+.git
+.gitignore
+coverage
+.nyc_output
+tmp
+temp
+*.tmp
+.env
+.env.*
+!.env.example
+k8s/secret.yaml
+secrets
+**/*.pem
+**/*.key
+.vscode
+.idea
+Dockerfile*
+docker-compose*.yml
