@@ -121,7 +121,7 @@ Set `LOGGING_SERVICE_URL=http://logging-microservice:3367` in the calling servic
 
 ## Local Development
 
-Docker Compose is for local development only — not used in production.
+Kubernetes is for local development only — not used in production.
 
 ```bash
 cp .env.example .env
