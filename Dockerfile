@@ -19,6 +19,10 @@ FROM node:24-slim
 
 WORKDIR /app
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl wget \
+  && rm -rf /var/lib/apt/lists/*
+
 # Copy package files
 COPY package*.json ./
 

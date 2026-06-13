@@ -8,12 +8,7 @@
 
 **Query the RAG before reading source files** — saves 2000-5000 tokens per answer.
 
-```bash
-kubectl -n statex-apps exec deployment/logging-microservice -- curl -s -X POST http://docs-rag-microservice:3397/retrieval/agent-context \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $(cat ~/.claude/rag-token)" \
-  -d '{"query": "YOUR QUESTION HERE", "maxTokens": 3000}'
-```
+The pod receives `JWT_TOKEN` from Vault `secret/prod/logging-microservice` via ExternalSecret. The production image includes `curl`; use the in-pod token and never print it. See `AGENTS.md` for the curl command.
 
 
 ---
