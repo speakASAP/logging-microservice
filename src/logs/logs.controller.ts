@@ -31,6 +31,31 @@ export class LogsController {
     }
   }
 
+  @Get('marathon-events/summary')
+  async getMarathonEventsSummary(
+    @Query('windowMinutes') windowMinutes?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+      return {
+        success: true,
+        data: await this.logsService.getMarathonEventSummary({
+          windowMinutes: windowMinutes ? Number(windowMinutes) : undefined,
+          limit: limit ? Number(limit) : undefined,
+        }),
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to summarize Marathon events',
+          error: error instanceof Error ? error.message : String(error),
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   @Get('query')
   @UseGuards(AdminRoleGuard)
   async queryLogs(
