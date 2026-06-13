@@ -1,0 +1,50 @@
+nodes:
+  - id: VISION
+    type: Vision
+    path: 01_vision/VISION.md
+  - id: FEAT-001
+    type: Feature
+    path: 10_features/FEAT-001-centralized-structured-logging.md
+  - id: TASK-001
+    type: Task
+    path: 11_tasks/TASK-001-implement-ips-baseline.md
+  - id: EP-TASK-001
+    type: ExecutionPlan
+    path: 21_execution_plans/EP-TASK-001.md
+  - id: PROMPT-TASK-001-implement-ips-baseline
+    type: CodingPrompt
+    path: 14_prompts/PROMPT-TASK-001-implement-ips-baseline.md
+  - id: CP-TASK-001
+    type: ContextPackage
+    path: 13_context_packages/CP-TASK-001-implement-ips-baseline.md
+  - id: VAL-TASK-001-ips-baseline
+    type: ValidationReport
+    path: 12_validation/VAL-TASK-001-ips-baseline.md
+  - id: ADR-001
+    type: ADR
+    path: 07_decisions/ADR-001-file-based-rotated-log-storage.md
+edges:
+  - from: TASK-001
+    type: impacts_goal
+    to: VISION
+  - from: TASK-001
+    type: implements
+    to: FEAT-001
+  - from: EP-TASK-001
+    type: derives_from
+    to: TASK-001
+  - from: EP-TASK-001
+    type: generates
+    to: PROMPT-TASK-001-implement-ips-baseline
+  - from: EP-TASK-001
+    type: constrained_by
+    to: ADR-001
+  - from: PROMPT-TASK-001-implement-ips-baseline
+    type: derives_from
+    to: EP-TASK-001
+  - from: PROMPT-TASK-001-implement-ips-baseline
+    type: included_in_context
+    to: CP-TASK-001
+  - from: VAL-TASK-001-ips-baseline
+    type: validates
+    to: TASK-001
