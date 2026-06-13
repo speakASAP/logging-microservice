@@ -33,6 +33,13 @@
     if (err) el.textContent = err;
   }
 
+  function requireAdmin(user) {
+    if (window.LoggingAuth.hasAdminRole(user)) return true;
+    window.LoggingAuth.clearTokens();
+    showLogin('Logging admin role required');
+    return false;
+  }
+
   function renderStats(logs) {
     var total = logs.length;
     var byLevel = { error: 0, warn: 0, info: 0, debug: 0 };
@@ -135,6 +142,7 @@
       var errEl = document.getElementById('login-error');
       errEl.hidden = true;
       window.LoggingAuth.login(email, password).then(function (result) {
+        if (!requireAdmin(result.user)) return;
         document.getElementById('user-email').textContent = result.user && (result.user.email || result.user.name) || email;
         showPanel();
         loadServices();
@@ -171,12 +179,12 @@
     initLogout();
     initFilters();
     window.LoggingAuth.validate().then(function (user) {
-      if (user) {
+      if (user && requireAdmin(user)) {
         document.getElementById('user-email').textContent = user.email || user.name || 'User';
         showPanel();
         loadServices();
         loadLogs({ limit: 100 });
-      } else {
+      } else if (!user) {
         showLogin();
       }
     }).catch(function () { showLogin(); });
