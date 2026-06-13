@@ -34,6 +34,8 @@ All services **must** include `duration_ms` in metadata and log every timeout at
 
 ### GET /api/logs/query
 
+Admin read endpoint. Requires `Authorization: Bearer <Auth access token>` with one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`.
+
 | Param | Description |
 |-------|-------------|
 | `service` | Filter by service name |
@@ -48,6 +50,8 @@ All services **must** include `duration_ms` in metadata and log every timeout at
 ```
 
 ### GET /api/logs/services
+
+Admin read endpoint. Requires `Authorization: Bearer <Auth access token>` with one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`.
 
 ```json
 { "success": true, "data": ["svc-a", "svc-b"], "count": 2 }
