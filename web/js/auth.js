@@ -3,6 +3,11 @@
  */
 (function () {
   const STORAGE_KEYS = { access: 'logging_admin_access', refresh: 'logging_admin_refresh' };
+  const ADMIN_ROLES = [
+    'global:superadmin',
+    'app:logging-microservice:admin',
+    'internal:logging-microservice:admin'
+  ];
 
   function getConfig() {
     return window.LOGGING_WEB_CONFIG || {};
@@ -44,6 +49,12 @@
           return { user: data.user };
         }
         throw new Error('No token in response');
+      });
+    },
+    hasAdminRole: function (user) {
+      var roles = user && Array.isArray(user.roles) ? user.roles : [];
+      return roles.some(function (role) {
+        return ADMIN_ROLES.indexOf(role) !== -1;
       });
     },
     validate: function () {

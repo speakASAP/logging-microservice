@@ -2,9 +2,10 @@
  * Logs Controller
  */
 
-import { Controller, Post, Get, Body, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { LogsService } from './logs.service';
 import { LogEntryDto } from './dto/log-entry.dto';
+import { AdminRoleGuard } from '../auth/admin-role.guard';
 
 @Controller('api/logs')
 export class LogsController {
@@ -31,6 +32,7 @@ export class LogsController {
   }
 
   @Get('query')
+  @UseGuards(AdminRoleGuard)
   async queryLogs(
     @Query('service') service?: string,
     @Query('level') level?: string,
@@ -68,6 +70,7 @@ export class LogsController {
   }
 
   @Get('services')
+  @UseGuards(AdminRoleGuard)
   async getServices() {
     try {
       const services = await this.logsService.getServices();
