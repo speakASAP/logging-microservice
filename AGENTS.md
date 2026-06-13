@@ -11,6 +11,7 @@ curl -s -X POST http://docs-rag-microservice.statex-apps.svc.cluster.local:3397/
   -d '{"query": "YOUR QUESTION HERE", "maxTokens": 3000}'
 ```
 
+- Auth token source: `JWT_TOKEN` from Vault `secret/prod/logging-microservice`, synced by ExternalSecret into `logging-microservice-secret` and loaded via `envFrom`.
 - Internal URL: `http://docs-rag-microservice.statex-apps.svc.cluster.local:3397`
 - Public URL: `https://docs-rag.alfares.cz`
 - Full guide: `docs-rag-microservice/docs/RAG_USAGE.md`
