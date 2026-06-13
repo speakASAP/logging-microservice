@@ -26,10 +26,19 @@ type MarathonEventSummaryRow = {
 const MARATHON_EVENT_PREFIXES = [
   'marathon.registration.',
   'marathon.checkout.',
+  'marathon.gift.',
+  'marathon.payment_webhook.',
 ];
 
 const SAFE_MARATHON_EVENT_FIELDS = new Set([
   'amount',
+  'status',
+  'idempotent',
+  'hasOrderId',
+  'hasMarathonerId',
+  'hasCode',
+  'callbackStatus',
+  'callbackEvent',
   'currency',
   'error',
   'hasEmail',
