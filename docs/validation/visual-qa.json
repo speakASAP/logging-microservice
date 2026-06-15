@@ -1,0 +1,158 @@
+{
+  "targetUrl": "http://127.0.0.1:4173/",
+  "generatedAt": "2026-06-14T19:54:45.671Z",
+  "command": "NODE_PATH=/Users/Sergej.Stasok/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules /Users/Sergej.Stasok/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node scripts/visual-qa.cjs",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "landing desktop",
+      "file": "docs/validation/landing-desktop.png"
+    },
+    {
+      "name": "dashboard denied",
+      "file": "docs/validation/dashboard-denied.png"
+    },
+    {
+      "name": "dashboard customer",
+      "file": "docs/validation/dashboard-customer.png"
+    },
+    {
+      "name": "admin denied",
+      "file": "docs/validation/admin-denied.png"
+    },
+    {
+      "name": "admin authorized",
+      "file": "docs/validation/admin-authorized.png"
+    },
+    {
+      "name": "dashboard mobile",
+      "file": "docs/validation/dashboard-mobile.png"
+    }
+  ],
+  "checks": [
+    {
+      "name": "landing service offer",
+      "passed": true
+    },
+    {
+      "name": "landing pricing tiers",
+      "passed": true
+    },
+    {
+      "name": "dashboard guest denied",
+      "passed": true
+    },
+    {
+      "name": "dashboard customer allowed",
+      "passed": true
+    },
+    {
+      "name": "dashboard key masked",
+      "passed": true
+    },
+    {
+      "name": "admin non-admin denied",
+      "passed": true
+    },
+    {
+      "name": "admin allowed",
+      "passed": true
+    },
+    {
+      "name": "admin live adapter visible",
+      "passed": true
+    },
+    {
+      "name": "admin no-token error",
+      "passed": true
+    },
+    {
+      "name": "console errors absent",
+      "passed": true
+    },
+    {
+      "name": "mobile horizontal overflow absent",
+      "passed": true
+    },
+    {
+      "name": "sensitive forbidden patterns absent",
+      "passed": true
+    },
+    {
+      "name": "browser storage empty",
+      "passed": true
+    },
+    {
+      "name": "url has no query or hash",
+      "passed": true
+    },
+    {
+      "name": "emails are example.invalid only",
+      "passed": true
+    },
+    {
+      "name": "live adapter visible",
+      "passed": true
+    },
+    {
+      "name": "no-token live error visible",
+      "passed": true
+    }
+  ],
+  "result": {
+    "title": "LogStream | Logging Microservice",
+    "overflowX": false,
+    "width": 390,
+    "scrollWidth": 390,
+    "activeButtons": [
+      "Dashboard",
+      "Overview",
+      "API Key"
+    ],
+    "bodyStart": "LogStream\nLanding\nDashboard\nAdmin\nGuest\nCustomer user\nAuthenticated, no admin right\nLogging admin\nRegister\nCustomer dashboard\n\nConnect applications, send logs through scoped keys, and monitor recent ingestion for tenant_example_dev.\n\nView API documentation\nRegenerate key\nINGESTED LOGS\n1.23M\n+12.4%\nERROR LOGS\n2,345\n+8.1%\nWARNING LOGS\n8,921\n-4.2%\nAPPLICATIONS\n12\n+2\nLogs over time\nLog levels\nInfo 1.05M\n85.4%\n\nInfo events across connected applications in the selected time range.\n\nWarn 120K\n9.8%\n\nWar",
+    "sensitiveExposure": {
+      "forbiddenPatternMatches": [],
+      "redactedSecretPresent": true,
+      "onlyExampleInvalidEmails": true,
+      "urlHasNoQueryOrHash": true,
+      "storage": {
+        "localStorageKeys": [],
+        "sessionStorageKeys": []
+      }
+    }
+  },
+  "errors": [],
+  "skippedGates": [
+    {
+      "gate": "Package test suite",
+      "reason": "[MISSING: no package manifest or test runner exists in this checkout]."
+    },
+    {
+      "gate": "Lint/build/typecheck",
+      "reason": "[MISSING: no package manifest, build tool, lint command, or typechecker exists in this checkout]."
+    },
+    {
+      "gate": "Live API contract validation",
+      "reason": "[MISSING: approved bearer token for validation run; implemented admin log query/services contracts are documented, but no live token was supplied]."
+    },
+    {
+      "gate": "Sensitive-data fixture audit beyond local synthetic data",
+      "reason": "[MISSING: authoritative sensitive-field list and export/copy approval rules]."
+    },
+    {
+      "gate": "Deployment readiness",
+      "reason": "[UNKNOWN: deployment process and release gate owner]."
+    }
+  ]
+}
