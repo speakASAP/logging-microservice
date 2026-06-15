@@ -4,11 +4,17 @@
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
+import * as express from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
+    const expressApp = app.getHttpAdapter().getInstance();
+    const webRoot = join(process.cwd(), 'web');
+
+    app.use(express.static(webRoot, { index: false }));
 
     // Enable CORS
     const corsOrigin = process.env.CORS_ORIGIN || '*';

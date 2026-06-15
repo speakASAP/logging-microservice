@@ -1,16 +1,17 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin | Logging Service</title>
+  <title>Admin | LogStream</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="admin">
+<body class="app-page">
   <div id="login-screen" class="login-screen">
     <div class="login-card">
+      <a class="brand" href="/"><span class="brand-mark"></span>LogStream</a>
       <h1>Admin login</h1>
-      <p class="login-hint">Sign in with your auth-microservice account.</p>
+      <p>Sign in with Auth. Admin reads require <b>global:superadmin</b>, <b>app:logging-microservice:admin</b>, or <b>internal:logging-microservice:admin</b>.</p>
       <form id="login-form">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" required autocomplete="email">
@@ -19,105 +20,74 @@
         <button type="submit" class="btn btn-primary btn-block">Sign in</button>
       </form>
       <p id="login-error" class="error-msg" role="alert" hidden></p>
+      <a href="/" class="muted-link">Back to landing</a>
     </div>
   </div>
 
-  <div id="admin-panel" class="admin-panel" hidden>
-    <header class="admin-header">
-      <a href="/" class="logo">Logging</a>
-      <nav>
-        <span class="user-email" id="user-email"></span>
-        <button type="button" id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
+  <div id="admin-panel" hidden>
+    <header class="site-header">
+      <a class="brand" href="/"><span class="brand-mark"></span>LogStream</a>
+      <nav class="top-nav" aria-label="Primary">
+        <a href="/">Landing</a>
+        <a href="/customer">Dashboard</a>
+        <a class="active" href="/admin">Admin</a>
       </nav>
+      <div class="user-strip"><span id="user-email"></span><button type="button" id="logout-btn" class="btn">Logout</button></div>
     </header>
 
-    <main class="admin-main">
-      <section class="stats-section">
-        <h2>Statistics</h2>
-        <div class="stats-grid" id="stats-grid">
-          <div class="stat-card">
-            <span class="stat-value" id="stat-total">—</span>
-            <span class="stat-label">Logs (current query)</span>
-          </div>
-          <div class="stat-card stat-error">
-            <span class="stat-value" id="stat-error">—</span>
-            <span class="stat-label">Errors</span>
-          </div>
-          <div class="stat-card stat-warn">
-            <span class="stat-value" id="stat-warn">—</span>
-            <span class="stat-label">Warnings</span>
-          </div>
-          <div class="stat-card stat-info">
-            <span class="stat-value" id="stat-info">—</span>
-            <span class="stat-label">Info</span>
-          </div>
-          <div class="stat-card stat-debug">
-            <span class="stat-value" id="stat-debug">—</span>
-            <span class="stat-label">Debug</span>
-          </div>
-        </div>
-      </section>
+    <main class="workspace">
+      <aside class="sidebar">
+        <b>Administration</b>
+        <a class="active" href="#overview">Overview</a>
+        <a href="#logs">Logs</a>
+        <a href="#analysis">AI analysis</a>
+        <a href="#notifications">Notifications</a>
+      </aside>
 
-      <section class="services-section">
-        <h2>Services</h2>
-        <div class="services-list" id="services-list">
-          <p class="loading" id="services-loading">Loading services…</p>
+      <section class="content">
+        <div class="page-head">
+          <div>
+            <h1>Logging administration</h1>
+            <p>Backed by <code>/api/logs/query</code> and <code>/api/logs/services</code>. Backend authorization is enforced server-side.</p>
+          </div>
+          <button type="button" id="analyze-btn" class="btn btn-primary">Analyze current logs</button>
         </div>
-      </section>
 
-      <section class="logs-section">
-        <h2>Log history</h2>
-        <form id="filters-form" class="filters-form">
-          <label>
-            Service
-            <select name="service" id="filter-service">
-              <option value="">All</option>
-            </select>
-          </label>
-          <label>
-            Level
-            <select name="level" id="filter-level">
-              <option value="">All</option>
-              <option value="error">Error</option>
-              <option value="warn">Warn</option>
-              <option value="info">Info</option>
-              <option value="debug">Debug</option>
-            </select>
-          </label>
-          <label>
-            Start date
-            <input type="date" name="startDate" id="filter-start">
-          </label>
-          <label>
-            End date
-            <input type="date" name="endDate" id="filter-end">
-          </label>
-          <label>
-            Limit
-            <select name="limit" id="filter-limit">
-              <option value="30">30</option>
-              <option value="100" selected>100</option>
-              <option value="500">500</option>
-            </select>
-          </label>
-          <button type="submit" class="btn btn-primary">Apply</button>
-        </form>
-        <div class="logs-table-wrap">
-          <table class="logs-table" id="logs-table">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Level</th>
-                <th>Service</th>
-                <th>Message</th>
-                <th>Metadata</th>
-              </tr>
-            </thead>
-            <tbody id="logs-tbody">
-            </tbody>
-          </table>
+        <div class="metrics">
+          <div class="metric"><span>Logs</span><b id="stat-total">-</b></div>
+          <div class="metric danger"><span>Errors</span><b id="stat-error">-</b></div>
+          <div class="metric warn"><span>Warnings</span><b id="stat-warn">-</b></div>
+          <div class="metric"><span>Services</span><b id="stat-services">-</b></div>
         </div>
-        <p id="logs-error" class="error-msg" hidden></p>
+
+        <section class="panel">
+          <h2>Services</h2>
+          <div class="service-tags" id="services-list"><p class="loading">Loading services...</p></div>
+        </section>
+
+        <section id="logs" class="panel">
+          <h2>Error and warning logs</h2>
+          <form id="filters-form" class="filters-form">
+            <label>Service<select name="service" id="filter-service"><option value="">All</option></select></label>
+            <label>Level<select name="level" id="filter-level"><option value="">All</option><option value="error">Error</option><option value="warn">Warn</option><option value="info">Info</option><option value="debug">Debug</option></select></label>
+            <label>Start date<input type="date" name="startDate" id="filter-start"></label>
+            <label>End date<input type="date" name="endDate" id="filter-end"></label>
+            <label>Limit<select name="limit" id="filter-limit"><option value="30">30</option><option value="100" selected>100</option><option value="500">500</option></select></label>
+            <button type="submit" class="btn btn-primary">Apply</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Level</th><th>Service</th><th>Message</th><th>Metadata</th></tr></thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+          <p id="logs-error" class="error-msg" hidden></p>
+        </section>
+
+        <div class="two-col">
+          <section id="analysis" class="panel"><h2>AI pattern analysis</h2><div id="ai-analysis"></div></section>
+          <section id="notifications" class="panel"><h2>Notification integrations</h2><ul class="contract-list"><li><span>Email alerts</span><b>notifications/send</b></li><li><span>Slack/PagerDuty</span><b>Contract pending</b></li><li><span>Trigger source</span><b>logging alert policy pending</b></li></ul></section>
+        </div>
       </section>
     </main>
   </div>

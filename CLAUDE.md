@@ -33,3 +33,7 @@ The pod receives `JWT_TOKEN` from Vault `secret/prod/logging-microservice` via E
 ```
 
 **Ops**: `curl http://logging-microservice:3367/health` · `kubectl logs -f deploy/logging-microservice -n statex-apps` · `./scripts/deploy.sh`
+
+## Central Instruction Source
+
+Shared agent rules now live in `/home/ssf/.claude/CLAUDE.md`, `/home/ssf/Documents/Github/CLAUDE.md`, `/home/ssf/.codex/AGENTS.md`, and `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`. Keep this file for repository-specific Claude constraints only; do not duplicate shared operating rules here.

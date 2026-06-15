@@ -1,53 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Centralized Logging Service | Statex</title>
+  <title>LogStream | Logging Microservice</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="landing">
-  <header class="hero">
-    <nav class="nav nav--landing">
-      <span class="logo logo--landing">Logging</span>
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-mark"></span>LogStream</a>
+    <nav class="top-nav" aria-label="Primary">
+      <a class="active" href="/">Landing</a>
+      <a href="/customer">Dashboard</a>
+      <a href="/admin">Admin</a>
     </nav>
-    <div class="hero-content">
-      <h1 class="hero-title">Centralized logging for your microservices</h1>
-      <p class="lead">Collect, store, and query logs from all your services in one place. Simple HTTP API. No vendor lock-in.</p>
-      <a href="/admin" class="btn">Admin panel</a>
-      <a href="https://github.com/speakASAP/logging-microservice" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">Documentation</a>
-    </div>
+    <a class="btn btn-primary" href="/customer">Register</a>
   </header>
 
-  <section class="features">
-    <h2 class="features-title">Why use centralized logging?</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <span class="feature-icon" aria-hidden="true">&#128203;</span>
-        <h3>One API</h3>
-        <p>POST logs from any language. Query by service, level, and date range.</p>
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>Centralized logging built for developers</h1>
+        <p>Collect, search, and analyze logs from every service. Real-time insight, Auth-protected administration, and integration-ready ingestion for your applications.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="/customer">Try demo</a>
+          <a class="btn btn-dark" href="#pricing">Buy plan</a>
+        </div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon" aria-hidden="true">&#128200;</span>
-        <h3>Daily rotation</h3>
-        <p>File-based storage with configurable rotation. JSON and human-readable formats.</p>
+      <div class="log-preview" aria-label="Live log stream preview">
+        <div><span>2026-06-13T10:42:12Z</span><b class="level-error">ERROR</b><span>orders-microservice</span><span>Order failed to process</span></div>
+        <div><span>2026-06-13T10:42:14Z</span><b class="level-warn">WARN</b><span>payments-microservice</span><span>Payment retry attempt</span></div>
+        <div><span>2026-06-13T10:42:18Z</span><b class="level-info">INFO</b><span>auth-microservice</span><span>User login successful</span></div>
+        <div><span>2026-06-13T10:42:21Z</span><b class="level-info">INFO</b><span>catalog-microservice</span><span>Stock updated</span></div>
+        <div><span>2026-06-13T10:42:24Z</span><b class="level-warn">WARN</b><span>gateway</span><span>Slow upstream response</span></div>
+        <div><span>2026-06-13T10:42:27Z</span><b class="level-error">ERROR</b><span>auth-microservice</span><span>Invalid token</span></div>
+        <div><span>2026-06-13T10:42:31Z</span><b class="level-info">INFO</b><span>notifications</span><span>Alert delivered</span></div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon" aria-hidden="true">&#9881;</span>
-        <h3>Self-hosted</h3>
-        <p>Deploy on your domain. Works with Docker and nginx. No SaaS dependency.</p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="cta">
-    <p class="cta-text">Integrate in minutes. Use the same DOMAIN for API and admin.</p>
-    <a href="/admin" class="btn">Admin panel</a>
-    <a href="https://github.com/speakASAP/logging-microservice" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">Documentation</a>
-  </section>
+    <section id="pricing" class="section">
+      <div class="section-head">
+        <h2>Simple pricing. Predictable scale.</h2>
+        <p>Start with the current logging API, then add retention, AI analysis, and notification workflows as your teams grow.</p>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card"><h3>Free</h3><strong>$0<span>/mo</span></strong><ul><li>5 GB logs</li><li>7 day retention</li><li>Basic search</li><li>1 application</li></ul><a class="btn" href="/customer">Get started</a></article>
+        <article class="price-card"><h3>Pro</h3><strong>$29<span>/mo</span></strong><ul><li>100 GB logs</li><li>30 day retention</li><li>Advanced search</li><li>Webhook setup</li></ul><a class="btn" href="/customer">Start Pro trial</a></article>
+        <article class="price-card featured"><h3>Team</h3><strong>$99<span>/mo</span></strong><ul><li>500 GB logs</li><li>90 day retention</li><li>Unlimited apps</li><li>AI pattern analysis</li></ul><a class="btn btn-primary" href="/customer">Start Team trial</a></article>
+        <article class="price-card"><h3>Enterprise</h3><strong>Custom</strong><ul><li>Custom retention</li><li>SAML SSO</li><li>Audit logs</li><li>Dedicated onboarding</li></ul><a class="btn" href="/customer">Contact sales</a></article>
+      </div>
+    </section>
 
-  <footer class="footer">
-    <p>Logging microservice &middot; Production-ready</p>
-  </footer>
+    <section class="section alt split">
+      <div>
+        <h2>Policy-aware logging operations</h2>
+        <p>Admin reads are protected by the logging backend and Auth-owned role claims. Users without a Logging admin role cannot query logs or services.</p>
+        <ul class="contract-list">
+          <li><span>Admin roles</span><b>global:superadmin</b></li>
+          <li><span>Application admin</span><b>app:logging-microservice:admin</b></li>
+          <li><span>Internal admin</span><b>internal:logging-microservice:admin</b></li>
+          <li><span>Validation</span><b>POST /auth/validate</b></li>
+        </ul>
+      </div>
+      <div class="product-panel">
+        <h3>Current API contracts</h3>
+        <img class="product-shot" src="/assets/logstream-concept.png" alt="LogStream landing, customer dashboard, and admin panel preview">
+        <p><b>POST</b> /api/logs</p>
+        <p><b>GET</b> /api/logs/query</p>
+        <p><b>GET</b> /api/logs/services</p>
+        <p><b>GET</b> /api/logs/marathon-events/summary</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">Logging microservice · Auth-protected admin · Integration-ready customer onboarding</footer>
 </body>
 </html>

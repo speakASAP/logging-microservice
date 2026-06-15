@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { LogsModule } from './logs/logs.module';
 import { HealthController } from './health/health.controller';
 import { InfoController } from './info/info.controller';
+import { FrontendController } from './frontend.controller';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { InfoController } from './info/info.controller';
     }),
     LogsModule,
   ],
-  controllers: [HealthController, InfoController],
+  controllers: [FrontendController, HealthController, InfoController],
   providers: [],
 })
 export class AppModule {}

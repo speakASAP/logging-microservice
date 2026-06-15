@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard | LogStream</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="app-page">
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-mark"></span>LogStream</a>
+    <nav class="top-nav" aria-label="Primary">
+      <a href="/">Landing</a>
+      <a class="active" href="/customer">Dashboard</a>
+      <a href="/admin">Admin</a>
+    </nav>
+    <a class="btn" href="/admin">Admin login</a>
+  </header>
+
+  <main class="workspace">
+    <aside class="sidebar">
+      <b>Customer workspace</b>
+      <a class="active" href="#overview">Overview</a>
+      <a href="#connect">Connect app</a>
+      <a href="#recent">Recent logs</a>
+      <a href="#analysis">AI analysis</a>
+      <a href="#notifications">Notifications</a>
+    </aside>
+
+    <section class="content">
+      <div class="page-head">
+        <div>
+          <h1>Customer dashboard</h1>
+          <p>Connect your applications to the logging microservice and verify recent ingestion.</p>
+        </div>
+        <button class="btn btn-primary" id="refresh-btn">Refresh preview</button>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><span>Ingest endpoint</span><b>/api/logs</b></div>
+        <div class="metric"><span>Required fields</span><b>level, service</b></div>
+        <div class="metric"><span>Accepted levels</span><b>error, warn, info, debug</b></div>
+        <div class="metric"><span>Admin reads</span><b>Role protected</b></div>
+      </div>
+
+      <section id="connect" class="panel">
+        <h2>Connect your application</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="node">Node.js</button>
+          <button class="tab" data-tab="python">Python</button>
+          <button class="tab" data-tab="curl">cURL</button>
+        </div>
+        <pre class="code" id="snippet"></pre>
+      </section>
+
+      <section id="recent" class="panel">
+        <h2>Recent log preview</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Time</th><th>Level</th><th>Service</th><th>Message</th></tr></thead>
+            <tbody id="recent-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="two-col">
+        <section id="analysis" class="panel">
+          <h2>AI pattern analysis</h2>
+          <p>The AI microservice does not expose a logging-specific pattern endpoint yet. This dashboard shows the expected analysis surface and can call that endpoint once the contract is added.</p>
+          <div id="analysis-list"></div>
+        </section>
+        <section id="notifications" class="panel">
+          <h2>Notification hooks</h2>
+          <p>Use the notifications microservice for alert delivery once a logging alert contract is approved.</p>
+          <ul class="contract-list">
+            <li><span>Email</span><b>Ready</b></li>
+            <li><span>Slack</span><b>Contract pending</b></li>
+            <li><span>PagerDuty</span><b>Contract pending</b></li>
+          </ul>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/customer.js"></script>
+</body>
+</html>

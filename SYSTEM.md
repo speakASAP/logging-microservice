@@ -39,8 +39,9 @@
 | PAYMENT_API_KEY | secret/prod/logging-microservice |
 | PAYMENT_APPLICATION_ID | secret/prod/logging-microservice |
 | PAYMENT_WEBHOOK_API_KEY | secret/prod/logging-microservice |
+| JWT_TOKEN | secret/prod/logging-microservice |
 
-> These credentials exist because this service handles payment webhook signature verification in addition to logging.
+> Payment credentials exist because this service handles payment webhook signature verification in addition to logging. `JWT_TOKEN` is the service-to-service bearer token used for docs-RAG retrieval.
 
 ## API Endpoints
 | Method | Path | Description |

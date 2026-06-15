@@ -7,7 +7,7 @@ import { Controller, Get } from '@nestjs/common';
 
 @Controller()
 export class InfoController {
-  @Get()
+  @Get('info')
   getServiceInfo() {
     const serviceName = process.env.SERVICE_NAME || 'logging-microservice';
     return {
@@ -100,4 +100,3 @@ export class InfoController {
     };
   }
 }
-
