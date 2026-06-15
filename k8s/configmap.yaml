@@ -21,9 +21,8 @@ data:
   NGINX_NETWORK_NAME: "nginx-network"
   DOCKER_VOLUME_BASE_PATH: "./logs"
   PROJECT_BASE_PATH: "/home/ssf/Documents/Github/"
-  # Service URLs - using host.k3s.internal during transition (auth, payments still on Docker)
-  # These will be updated to K8s DNS as services migrate
-  AUTH_SERVICE_URL: "http://host.k3s.internal:3370"
+  # Service URLs - Auth is now resolved through Kubernetes DNS; payments still uses the transition host bridge.
+  AUTH_SERVICE_URL: "http://auth-microservice:3370"
   PAYMENT_SERVICE_URL: "http://host.k3s.internal:3468"
   PAYMENT_CALLBACK_URL: "https://logging.alfares.cz/api/webhooks/payment-result"
   PAYMENT_SUCCESS_URL: "https://logging.alfares.cz/payment-result?status=completed"

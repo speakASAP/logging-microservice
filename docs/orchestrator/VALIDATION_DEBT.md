@@ -15,7 +15,7 @@ Record known validation failures that are not caused by the current task, so age
 
 | ID | Date | Command | Failure Summary | Scope | Owner | Blocks Current Task? | Unblock Condition | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| VD-001 | YYYY-MM-DD | `[command]` | `[sanitized failure]` | repo-wide / task-specific / external service | `[owner]` | yes/no | `[required fix or approval]` | `[report path or safe excerpt]` |
+| VD-001 | 2026-06-15 | Kubernetes exec from logging deployment running a Node DocsRAG retrieval request | DocsRAG retrieval returned HTTP 500 with a sanitized error envelope during logging Auth validation work. | external service | [UNKNOWN: DocsRAG owner] | no | DocsRAG service returns HTTP 200 for logging pod context retrieval using the pod JWT token. | Safe result: status 500, ok false, response keys statusCode and message. |
 
 ## Current-Task Decision Checklist
 
