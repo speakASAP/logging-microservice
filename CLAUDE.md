@@ -1,3 +1,18 @@
+# Claude Instructions
+
+Shared rules live here:
+
+- Claude profile: `/home/ssf/.claude/CLAUDE.md`
+- Shared ecosystem instructions: `/home/ssf/Documents/Github/CLAUDE.md`
+- Codex profile: `/home/ssf/.codex/AGENTS.md`
+- Cross-agent standard: `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`
+- Repository operations: `AGENT_OPERATIONS.md`
+
+Read those first, then follow the repository-specific notes below and the current planning/status files.
+
+
+## Repository-Specific Notes
+
 # CLAUDE.md (logging-microservice)
 
 → Ecosystem: [../shared/CLAUDE.md](../shared/CLAUDE.md) | Reading order: `BUSINESS.md` → `SYSTEM.md` → `AGENTS.md` → `TASKS.md` → `STATE.json`
@@ -9,7 +24,6 @@
 **Query the RAG before reading source files** — saves 2000-5000 tokens per answer.
 
 The pod receives `JWT_TOKEN` from Vault `secret/prod/logging-microservice` via ExternalSecret. The production image includes `curl`; use the in-pod token and never print it. See `AGENTS.md` for the curl command.
-
 
 ---
 
@@ -33,7 +47,3 @@ The pod receives `JWT_TOKEN` from Vault `secret/prod/logging-microservice` via E
 ```
 
 **Ops**: `curl http://logging-microservice:3367/health` · `kubectl logs -f deploy/logging-microservice -n statex-apps` · `./scripts/deploy.sh`
-
-## Central Instruction Source
-
-Shared agent rules now live in `/home/ssf/.claude/CLAUDE.md`, `/home/ssf/Documents/Github/CLAUDE.md`, `/home/ssf/.codex/AGENTS.md`, and `/home/ssf/.ai-agent-standards/CROSS_AGENT_AUTOMATION_STANDARD.md`. Keep this file for repository-specific Claude constraints only; do not duplicate shared operating rules here.
