@@ -4,10 +4,12 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import * as crypto from 'crypto';
 import * as winston from 'winston';
 import * as DailyRotateFile from 'winston-daily-rotate-file';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CustomerLogAccess } from '../auth/customer-log-read.guard';
 import { LogEntryDto, LogLevel } from './dto/log-entry.dto';
 
 
@@ -54,6 +56,87 @@ const SAFE_MARATHON_EVENT_FIELDS = new Set([
   'userBound',
 ]);
 
+
+
+type CustomerLogFilters = {
+  level?: string;
+  service?: string;
+  startTime?: string;
+  endTime?: string;
+  limit?: number;
+  cursor?: string;
+  q?: string;
+};
+
+type StoredLogEntry = {
+  level?: string;
+  message?: string;
+  service?: string;
+  timestamp?: string;
+  task_id?: string;
+  tenant_id?: string;
+  project_id?: string;
+  business_id?: string;
+  agent_id?: string;
+  correlation_id?: string;
+  duration_ms?: number;
+  metadata?: Record<string, any>;
+  [key: string]: unknown;
+};
+
+type CustomerLogEntry = {
+  raw: StoredLogEntry;
+  file: string;
+  lineIndex: number;
+  log_id: string;
+  timestamp: string;
+  level: string;
+  service: string;
+  message: string;
+};
+
+type CustomerLogListItem = {
+  log_id: string;
+  timestamp: string;
+  level: string;
+  service: string;
+  message_preview: string;
+  duration_ms: number | null;
+  correlation_ref: string | null;
+  redaction_status: 'clean' | 'redacted';
+  withheld_field_count: number;
+};
+
+type CustomerLogDetail = CustomerLogListItem & {
+  message_redacted: string;
+  safe_context: Record<string, string | number | boolean>;
+  redaction: {
+    status: 'clean' | 'redacted';
+    withheld_field_count: number;
+    policy: string;
+  };
+};
+
+type CustomerLogListResponse = {
+  items: CustomerLogListItem[];
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
+type CustomerLogFacetsResponse = {
+  levels: Array<{ value: string; count: number }>;
+  services: Array<{ value: string; count: number }>;
+};
+
+type CustomerLogSummaryResponse = {
+  generated_at: string;
+  total: number;
+  errors: number;
+  warnings: number;
+  by_level: Record<string, number>;
+  by_service: Record<string, number>;
+};
+
 @Injectable()
 export class LogsService {
   private logger: winston.Logger;
@@ -75,21 +158,25 @@ export class LogsService {
         winston.format.json(),
       ),
       transports: [
-        // Daily rotate file for all logs
-        new DailyRotateFile({
-          filename: path.join(this.logStoragePath, 'application-%DATE%.log'),
-          datePattern: 'YYYY-MM-DD',
-          maxSize: process.env.LOG_ROTATION_MAX_SIZE || '100m',
-          maxFiles: process.env.LOG_ROTATION_MAX_FILES || '10',
-        }),
-        // Separate file for errors
-        new DailyRotateFile({
-          filename: path.join(this.logStoragePath, 'error-%DATE%.log'),
-          datePattern: 'YYYY-MM-DD',
-          level: 'error',
-          maxSize: process.env.LOG_ROTATION_MAX_SIZE || '100m',
-          maxFiles: process.env.LOG_ROTATION_MAX_FILES || '10',
-        }),
+        ...(process.env.NODE_ENV === 'test'
+          ? []
+          : [
+              // Daily rotate file for all logs
+              new DailyRotateFile({
+                filename: path.join(this.logStoragePath, 'application-%DATE%.log'),
+                datePattern: 'YYYY-MM-DD',
+                maxSize: process.env.LOG_ROTATION_MAX_SIZE || '100m',
+                maxFiles: process.env.LOG_ROTATION_MAX_FILES || '10',
+              }),
+              // Separate file for errors
+              new DailyRotateFile({
+                filename: path.join(this.logStoragePath, 'error-%DATE%.log'),
+                datePattern: 'YYYY-MM-DD',
+                level: 'error',
+                maxSize: process.env.LOG_ROTATION_MAX_SIZE || '100m',
+                maxFiles: process.env.LOG_ROTATION_MAX_FILES || '10',
+              }),
+            ]),
         // Console output in development
         ...(process.env.NODE_ENV === 'development'
           ? [new winston.transports.Console()]
@@ -149,6 +236,7 @@ export class LogsService {
         service: logEntry.service,
         timestamp: logEntry.timestamp || new Date().toISOString(),
         task_id: logEntry.task_id,
+        tenant_id: logEntry.tenant_id,
         project_id: logEntry.project_id,
         business_id: logEntry.business_id,
         agent_id: logEntry.agent_id,
@@ -160,6 +248,7 @@ export class LogsService {
       this.logger.log(logEntry.level, resolvedMessage, {
         service: logEntry.service,
         task_id: logEntry.task_id,
+        tenant_id: logEntry.tenant_id,
         project_id: logEntry.project_id,
         ...logEntry.metadata,
       });
@@ -330,6 +419,334 @@ export class LogsService {
       }
     }
     return fields;
+  }
+
+
+  async queryCustomerLogs(access: CustomerLogAccess, filters: CustomerLogFilters = {}): Promise<CustomerLogListResponse> {
+    const limit = this.normalizeLimit(filters.limit);
+    const cursor = this.decodeCustomerCursor(filters.cursor);
+    const entries = this.readCustomerLogEntries(access, filters)
+      .sort((a, b) => this.compareCustomerEntriesDesc(a, b));
+
+    const pageWindow = cursor
+      ? entries.filter((entry) => this.isAfterCustomerCursor(entry, cursor))
+      : entries;
+    const page = pageWindow.slice(0, limit + 1);
+    const items = page.slice(0, limit).map((entry) => this.toCustomerLogListItem(entry));
+    const hasMore = page.length > limit;
+    const last = page[Math.min(limit, page.length) - 1];
+
+    return {
+      items,
+      next_cursor: hasMore && last ? this.encodeCustomerCursor(last) : null,
+      has_more: hasMore,
+    };
+  }
+
+  async getCustomerLogDetail(access: CustomerLogAccess, logId: string): Promise<CustomerLogDetail | null> {
+    if (!logId || typeof logId !== 'string') return null;
+    const entry = this.readCustomerLogEntries(access, {})
+      .find((candidate) => candidate.log_id === logId);
+    if (!entry) return null;
+    return this.toCustomerLogDetail(entry);
+  }
+
+  async getCustomerLogFacets(access: CustomerLogAccess, filters: CustomerLogFilters = {}): Promise<CustomerLogFacetsResponse> {
+    const entries = this.readCustomerLogEntries(access, filters);
+    const levels = new Map<string, number>();
+    const services = new Map<string, number>();
+
+    for (const entry of entries) {
+      levels.set(entry.level, (levels.get(entry.level) || 0) + 1);
+      services.set(entry.service, (services.get(entry.service) || 0) + 1);
+    }
+
+    return {
+      levels: Array.from(levels.entries()).sort().map(([value, count]) => ({ value, count })),
+      services: Array.from(services.entries()).sort().map(([value, count]) => ({ value, count })),
+    };
+  }
+
+  async getCustomerLogSummary(access: CustomerLogAccess, filters: CustomerLogFilters = {}): Promise<CustomerLogSummaryResponse> {
+    const entries = this.readCustomerLogEntries(access, filters);
+    const byLevel = new Map<string, number>();
+    const byService = new Map<string, number>();
+    let errors = 0;
+    let warnings = 0;
+
+    for (const entry of entries) {
+      byLevel.set(entry.level, (byLevel.get(entry.level) || 0) + 1);
+      byService.set(entry.service, (byService.get(entry.service) || 0) + 1);
+      if (entry.level === 'error') errors += 1;
+      if (entry.level === 'warn') warnings += 1;
+    }
+
+    return {
+      generated_at: new Date().toISOString(),
+      total: entries.length,
+      errors,
+      warnings,
+      by_level: Object.fromEntries(Array.from(byLevel.entries()).sort()),
+      by_service: Object.fromEntries(Array.from(byService.entries()).sort()),
+    };
+  }
+
+  private readCustomerLogEntries(access: CustomerLogAccess, filters: CustomerLogFilters): CustomerLogEntry[] {
+    const entries: CustomerLogEntry[] = [];
+    const allowedTenants = new Set(access.tenantIds || []);
+    if (allowedTenants.size === 0 || !fs.existsSync(this.logStoragePath)) return entries;
+
+    const logFiles = fs.readdirSync(this.logStoragePath).filter((file) =>
+      file.endsWith('.log')
+      && !file.includes('application')
+      && !file.includes('error')
+      && !file.includes('.human.log'),
+    );
+
+    for (const file of logFiles) {
+      const filePath = path.join(this.logStoragePath, file);
+      const content = fs.readFileSync(filePath, 'utf8');
+      const lines = content.split('\n');
+
+      lines.forEach((line, lineIndex) => {
+        if (!line.trim()) return;
+        try {
+          const raw = JSON.parse(line) as StoredLogEntry;
+          const tenantId = this.resolveLogTenantId(raw);
+          if (!tenantId || !allowedTenants.has(tenantId)) return;
+          const entry = this.toCustomerLogEntry(raw, file, lineIndex);
+          if (!this.matchesCustomerFilters(entry, filters)) return;
+          entries.push(entry);
+        } catch {
+          return;
+        }
+      });
+    }
+
+    return entries;
+  }
+
+  private toCustomerLogEntry(raw: StoredLogEntry, file: string, lineIndex: number): CustomerLogEntry {
+    const timestamp = typeof raw.timestamp === 'string' && raw.timestamp ? raw.timestamp : new Date(0).toISOString();
+    const level = typeof raw.level === 'string' && raw.level ? raw.level : 'info';
+    const service = typeof raw.service === 'string' && raw.service ? raw.service : file.replace(/\.log$/, '');
+    const message = typeof raw.message === 'string' ? raw.message : '';
+    const idSeed = [file, lineIndex, timestamp, level, service, raw.correlation_id || '', message].join('\u001f');
+
+    return {
+      raw,
+      file,
+      lineIndex,
+      log_id: 'log_' + crypto.createHash('sha256').update(idSeed).digest('hex').slice(0, 32),
+      timestamp,
+      level,
+      service,
+      message,
+    };
+  }
+
+  private toCustomerLogListItem(entry: CustomerLogEntry): CustomerLogListItem {
+    const redacted = this.redactLogText(entry.message);
+    const context = this.buildSafeContext(entry.raw.metadata);
+    const withheld = this.countWithheldFields(entry.raw, context.withheldCount, redacted.withheldCount);
+
+    return {
+      log_id: entry.log_id,
+      timestamp: entry.timestamp,
+      level: entry.level,
+      service: entry.service,
+      message_preview: this.truncate(redacted.value, 240),
+      duration_ms: typeof entry.raw.duration_ms === 'number' ? entry.raw.duration_ms : null,
+      correlation_ref: this.safeCorrelationRef(entry.raw.correlation_id),
+      redaction_status: withheld > 0 || redacted.changed ? 'redacted' : 'clean',
+      withheld_field_count: withheld,
+    };
+  }
+
+  private toCustomerLogDetail(entry: CustomerLogEntry): CustomerLogDetail {
+    const listItem = this.toCustomerLogListItem(entry);
+    const redacted = this.redactLogText(entry.message);
+    const context = this.buildSafeContext(entry.raw.metadata);
+
+    return {
+      ...listItem,
+      message_redacted: redacted.value,
+      safe_context: context.value,
+      redaction: {
+        status: listItem.redaction_status,
+        withheld_field_count: listItem.withheld_field_count,
+        policy: 'browser-safe-v1',
+      },
+    };
+  }
+
+  private matchesCustomerFilters(entry: CustomerLogEntry, filters: CustomerLogFilters): boolean {
+    const level = filters.level?.trim().toLowerCase();
+    if (level && entry.level !== level) return false;
+
+    const service = filters.service?.trim();
+    if (service && entry.service !== service) return false;
+
+    const startTime = this.normalizeIsoTime(filters.startTime);
+    if (startTime && entry.timestamp < startTime) return false;
+
+    const endTime = this.normalizeIsoTime(filters.endTime);
+    if (endTime && entry.timestamp > endTime) return false;
+
+    const q = filters.q?.trim().toLowerCase();
+    if (q) {
+      const redactedMessage = this.redactLogText(entry.message).value.toLowerCase();
+      const safeContext = JSON.stringify(this.buildSafeContext(entry.raw.metadata).value).toLowerCase();
+      if (!redactedMessage.includes(q) && !safeContext.includes(q)) return false;
+    }
+
+    return true;
+  }
+
+  private resolveLogTenantId(entry: StoredLogEntry): string | null {
+    const tenantId = this.asNonEmptyString(entry.tenant_id) || this.asNonEmptyString(entry.metadata?.tenant_id);
+    if (tenantId) return tenantId;
+
+    const projectTenant = this.resolveTenantFromMap(process.env.LOGGING_TENANT_PROJECT_MAP, entry.project_id || entry.metadata?.project_id);
+    if (projectTenant) return projectTenant;
+
+    return this.resolveTenantFromMap(process.env.LOGGING_TENANT_BUSINESS_MAP, entry.business_id || entry.metadata?.business_id);
+  }
+
+  private resolveTenantFromMap(rawMap: string | undefined, rawKey: unknown): string | null {
+    const key = this.asNonEmptyString(rawKey);
+    if (!rawMap || !key) return null;
+
+    try {
+      const parsed = JSON.parse(rawMap) as Record<string, unknown>;
+      const mapped = parsed[key];
+      return this.asNonEmptyString(mapped);
+    } catch {
+      return null;
+    }
+  }
+
+  private buildSafeContext(metadata: Record<string, any> | undefined): { value: Record<string, string | number | boolean>; withheldCount: number } {
+    const safeKeys = new Set([
+      'attempt',
+      'component',
+      'duration_ms',
+      'environment',
+      'error_code',
+      'event',
+      'event_code',
+      'http_status',
+      'method',
+      'operation',
+      'retry_count',
+      'status',
+    ]);
+    const value: Record<string, string | number | boolean> = {};
+    let withheldCount = 0;
+
+    for (const [key, rawValue] of Object.entries(metadata || {})) {
+      if (!safeKeys.has(key)) {
+        withheldCount += 1;
+        continue;
+      }
+
+      if (typeof rawValue === 'string') {
+        value[key] = this.truncate(this.redactLogText(rawValue).value, 160);
+      } else if (typeof rawValue === 'number' || typeof rawValue === 'boolean') {
+        value[key] = rawValue;
+      } else {
+        withheldCount += 1;
+      }
+    }
+
+    return { value, withheldCount };
+  }
+
+  private redactLogText(value: string): { value: string; changed: boolean; withheldCount: number } {
+    let result = value || '';
+    let withheldCount = 0;
+    const apply = (pattern: RegExp, replacement: string) => {
+      result = result.replace(pattern, () => {
+        withheldCount += 1;
+        return replacement;
+      });
+    };
+
+    apply(/authorization\s*[:=]\s*bearer\s+[^\s,;]+/gi, 'authorization=[REDACTED]');
+    apply(/\b(token|secret|password|api[_-]?key|auth[_-]?header)\b\s*[:=]\s*[^\s,;}]+/gi, '$1=[REDACTED]');
+    apply(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]');
+    apply(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[REDACTED_IP]');
+    apply(/\b[a-f0-9]{24,}\b/gi, '[REDACTED_ID]');
+
+    if (/\n\s*at\s+/i.test(result)) {
+      result = result.split('\n')[0] + '\n[REDACTED_STACK]';
+      withheldCount += 1;
+    }
+
+    return { value: result, changed: result !== (value || ''), withheldCount };
+  }
+
+  private countWithheldFields(entry: StoredLogEntry, metadataWithheld: number, redactionWithheld: number): number {
+    let count = metadataWithheld + redactionWithheld;
+    for (const key of ['tenant_id', 'project_id', 'business_id', 'agent_id', 'task_id']) {
+      if (this.asNonEmptyString((entry as Record<string, unknown>)[key])) count += 1;
+    }
+    return count;
+  }
+
+  private safeCorrelationRef(correlationId: unknown): string | null {
+    const value = this.asNonEmptyString(correlationId);
+    if (!value) return null;
+    return 'corr_' + crypto.createHash('sha256').update(value).digest('hex').slice(0, 16);
+  }
+
+  private normalizeLimit(limit: number | undefined): number {
+    const parsed = Number(limit);
+    if (!Number.isFinite(parsed)) return 50;
+    return Math.max(1, Math.min(Math.floor(parsed), 100));
+  }
+
+  private normalizeIsoTime(value: string | undefined): string | null {
+    if (!value || Number.isNaN(Date.parse(value))) return null;
+    return new Date(value).toISOString();
+  }
+
+  private encodeCustomerCursor(entry: CustomerLogEntry): string {
+    return Buffer.from(JSON.stringify({ timestamp: entry.timestamp, log_id: entry.log_id })).toString('base64url');
+  }
+
+  private decodeCustomerCursor(cursor: string | undefined): { timestamp: string; log_id: string } | null {
+    if (!cursor) return null;
+    try {
+      const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { timestamp?: unknown; log_id?: unknown };
+      const timestamp = this.asNonEmptyString(decoded.timestamp);
+      const logId = this.asNonEmptyString(decoded.log_id);
+      if (!timestamp || !logId) return null;
+      return { timestamp, log_id: logId };
+    } catch {
+      return null;
+    }
+  }
+
+  private isAfterCustomerCursor(entry: CustomerLogEntry, cursor: { timestamp: string; log_id: string }): boolean {
+    if (entry.timestamp < cursor.timestamp) return true;
+    if (entry.timestamp > cursor.timestamp) return false;
+    return entry.log_id < cursor.log_id;
+  }
+
+  private compareCustomerEntriesDesc(a: CustomerLogEntry, b: CustomerLogEntry): number {
+    const timestampCompare = b.timestamp.localeCompare(a.timestamp);
+    if (timestampCompare !== 0) return timestampCompare;
+    return b.log_id.localeCompare(a.log_id);
+  }
+
+  private truncate(value: string, maxLength: number): string {
+    if (value.length <= maxLength) return value;
+    return value.slice(0, Math.max(0, maxLength - 3)) + '...';
+  }
+
+  private asNonEmptyString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
   }
 
 

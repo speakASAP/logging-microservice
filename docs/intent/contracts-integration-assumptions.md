@@ -343,3 +343,21 @@ Validation evidence for T1: remote review used `ssh alfares` with read-only
 remote repository was edited. No raw logs, bearer tokens, API keys, customer
 identifiers, production records, or secrets were copied into local files or
 prompts.
+
+## T5-D Ownership Update: Logging Entitlements
+
+Owner decision recorded on 2026-06-15: logging-specific entitlements live in `logging-microservice`.
+
+Integration assumption update:
+
+- Frontend entitlement reads should target Logging, not Payments.
+- Payments may be referenced only as upstream payment-state evidence in the Logging entitlement read model.
+- Auth remains the source of user identity and role claims.
+- The planned Logging endpoint is `GET /api/v1/entitlements/current`.
+
+Remaining blockers:
+
+- tenant scope v1: derive `tenant_id` as `auth_user:<Auth user id>` from Auth `/auth/validate` user `id`, with future migration marker for organization tenants.
+- permission v1: `logging.dashboard.read`; admin overrides: `global:superadmin`, `app:logging-microservice:admin`, `internal:logging-microservice:admin`.
+- [MISSING: source of payment-to-plan activation events].
+- [MISSING: persistence model for plan, trial, and usage counters].

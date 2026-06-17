@@ -554,3 +554,81 @@ Regex rule: regex matching must be evaluated server-side with bounded execution 
 - [MISSING: AI service owner approval for analysis profiles, confidence scores, and raw-log redaction behavior].
 - [MISSING: notification service owner approval for alert policy matching, throttling, and channel provider support].
 - [MISSING: logging billing/trial owner and entitlement route contract].
+
+## T5-D Decision: Logging Entitlements
+
+Owner decision recorded on 2026-06-15: logging-specific billing/trial/plan/entitlement projection lives in `logging-microservice`.
+
+Current evidence still shows no implemented entitlement controller. The approved ownership direction is:
+
+- `logging-microservice` owns the customer-dashboard entitlement read model for logging features.
+- `payments-microservice` remains upstream payment-state evidence only and is not the browser-facing entitlement authority.
+- `auth-microservice` remains identity, token, and RBAC role-claim authority.
+
+### Planned Endpoint
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/entitlements/current` | Auth bearer token, tenant-scoped | Return active tenant logging entitlement state. |
+
+### Planned Response Shape
+
+```json
+{
+  "tenant_id": "tenant_synthetic_01",
+  "status": "trialing",
+  "plan": {
+    "id": "logging_starter",
+    "name": "Starter",
+    "interval": "month"
+  },
+  "trial": {
+    "active": true,
+    "ends_at": "2026-07-15T00:00:00Z"
+  },
+  "billing": {
+    "state": "active",
+    "payment_state_source": "payments-microservice"
+  },
+  "limits": {
+    "api_keys_active": 3,
+    "hooks_active": 2,
+    "retention_days": 30,
+    "monthly_ingest_events": 100000,
+    "dashboard_users": 5,
+    "ai_analysis_runs_per_month": 10
+  },
+  "usage": {
+    "api_keys_active": 1,
+    "hooks_active": 0,
+    "monthly_ingest_events": 1200,
+    "ai_analysis_runs_this_month": 0
+  },
+  "features": {
+    "api_key_management": true,
+    "hook_management": true,
+    "ai_analysis": false,
+    "export": false
+  }
+}
+```
+
+### Open Items
+
+- tenant scope v1: derive `tenant_id` as `auth_user:<Auth user id>` from Auth `/auth/validate` user `id`, with future migration marker for organization tenants.
+- permission v1: `logging.dashboard.read`; admin overrides: `global:superadmin`, `app:logging-microservice:admin`, `internal:logging-microservice:admin`.
+- [MISSING: source of payment-to-plan activation events].
+- [MISSING: persistence model for plan, trial, and usage counters].
+- [MISSING: runtime implementation and tests].
+
+
+### T5-D Auth And Tenant Scope Resolution
+
+Resolved on 2026-06-15 for v1 implementation:
+
+- Customer entitlement reads require `logging.dashboard.read` in the Auth `roles` array.
+- Existing admin roles also authorize the read: `global:superadmin`, `app:logging-microservice:admin`, and `internal:logging-microservice:admin`.
+- Auth `/auth/validate` currently returns sanitized user fields and roles but no organization tenant claim.
+- Logging v1 derives `tenant_id` as `auth_user:<Auth user id>` from Auth user `id`, falling back to Auth token `sub` only if present in validation output.
+- Organization/workspace tenant support remains a future migration and must not be inferred by the frontend.
+- Runtime implementation currently returns a conservative `not_configured`/`logging_free` default with paid feature flags disabled until persistence and payment activation are approved.

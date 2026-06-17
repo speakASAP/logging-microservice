@@ -240,3 +240,29 @@ Prompt -> Code -> Validation.
 - This plan is intentionally conservative because upstream approvals and source contracts are not present locally.
 - Any discovered authoritative backend contract should update `docs/intent/contracts-integration-assumptions.md` and reconcile `docs/intent/backend-contracts.md`.
 - Any exception that permits sensitive data display, storage, export, or screenshot capture requires explicit approval.
+
+## T5-D Logging Entitlement Contract Task
+
+Owner decision recorded on 2026-06-15: logging-specific entitlements live in `logging-microservice`.
+
+Agent-ready task:
+
+- Status: planned.
+- Owner role: backend-contract-agent, then backend-agent after missing tenant/auth/persistence decisions are resolved.
+- Objective: define and implement `GET /api/v1/entitlements/current` as the logging-owned plan/trial/limits/usage read endpoint for the customer dashboard.
+- Scope: `logging-microservice` docs and, after gate approval, read-only entitlement backend files under `src/entitlements/*` plus focused tests.
+- Allowed files now: `11_tasks/TASK-002-logging-entitlement-contract.md`, `21_execution_plans/EP-TASK-002-logging-entitlement-contract.md`, `22_goal_impact/GOAL-IMPACT-TASK-002.md`, `13_context_packages/CP-TASK-002-logging-entitlement-contract.md`, `14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md`, `12_validation/VAL-TASK-002-logging-entitlement-contract.md`, and `docs/intent/*` contract docs.
+- Forbidden files now: frontend source, payment source, auth source, production logs, secrets, and customer/provider records.
+- Dependencies: tenant scope v1: derive `tenant_id` as `auth_user:<Auth user id>` from Auth `/auth/validate` user `id`, with future migration marker for organization tenants, permission v1: `logging.dashboard.read`; admin overrides: `global:superadmin`, `app:logging-microservice:admin`, `internal:logging-microservice:admin`, [MISSING: source of payment-to-plan activation events], [MISSING: persistence model for plan, trial, and usage counters].
+- Validation evidence: documentation chain created, sensitive-data rules preserved, runtime implementation not started.
+- Handoff notes: do not integrate frontend billing/trial UI with live data until this endpoint is implemented and validated.
+
+Parallel execution section:
+
+| Workstream | Status | Owner | Scope | Merge order |
+| --- | --- | --- | --- | --- |
+| Contract finalization | ready now | backend-contract-agent | Resolve endpoint schema, error codes, limits, and docs. | 1 |
+| Tenant/auth model | dependency-gated | auth-integration-agent | Confirm tenant claim or lookup and entitlement permission names. | 2 |
+| Backend implementation | dependency-gated | backend-agent | Add read-only entitlement route, service, DTO, and tests. | 3 |
+| Validation | final integration | validation-agent | Build/tests, response-shape check, sensitive-data scan, validation report. | 4 |
+| Frontend integration | dependency-gated | frontend-agent | Consume validated endpoint in customer dashboard. | 5 |

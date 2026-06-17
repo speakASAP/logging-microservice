@@ -41,6 +41,10 @@ export class LogEntryDto {
 
   @IsString()
   @IsOptional()
+  tenant_id?: string;
+
+  @IsString()
+  @IsOptional()
   project_id?: string;
 
   @IsString()

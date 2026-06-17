@@ -5,6 +5,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LogsModule } from './logs/logs.module';
+import { EntitlementsModule } from "./entitlements/entitlements.module";
 import { HealthController } from './health/health.controller';
 import { InfoController } from './info/info.controller';
 import { FrontendController } from './frontend.controller';
@@ -16,6 +17,7 @@ import { FrontendController } from './frontend.controller';
       envFilePath: ['.env'],
     }),
     LogsModule,
+    EntitlementsModule,
   ],
   controllers: [FrontendController, HealthController, InfoController],
   providers: [],
