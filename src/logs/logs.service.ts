@@ -141,9 +141,13 @@ type CustomerLogSummaryResponse = {
 export class LogsService {
   private logger: winston.Logger;
   private logStoragePath: string;
+  private readonly logRotationMaxBytes: number;
+  private readonly logRotationMaxFiles: number;
 
   constructor() {
     this.logStoragePath = process.env.LOG_STORAGE_PATH || './logs';
+    this.logRotationMaxBytes = this.parseSizeToBytes(process.env.LOG_ROTATION_MAX_SIZE || '100m');
+    this.logRotationMaxFiles = this.parseMaxFiles(process.env.LOG_ROTATION_MAX_FILES || '10');
 
     // Ensure log directory exists
     if (!fs.existsSync(this.logStoragePath)) {
@@ -183,6 +187,110 @@ export class LogsService {
           : []),
       ],
     });
+  }
+
+  private parseSizeToBytes(value: string): number {
+    const match = value.trim().match(/^(\d+)([kmg])?$/i);
+    if (!match) return 100 * 1024 * 1024;
+
+    const amount = Number(match[1]);
+    const unit = (match[2] || '').toLowerCase();
+    const multiplier = unit === 'g' ? 1024 ** 3 : unit === 'm' ? 1024 ** 2 : unit === 'k' ? 1024 : 1;
+    return amount * multiplier;
+  }
+
+  private parseMaxFiles(value: string): number {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 1 ? parsed : 10;
+  }
+
+  private formatDateStamp(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private appendServiceLog(filePath: string, content: string): void {
+    this.rotateServiceLogIfNeeded(filePath, Buffer.byteLength(content, 'utf8'));
+    fs.appendFileSync(filePath, content, 'utf8');
+  }
+
+  private rotateServiceLogIfNeeded(filePath: string, incomingBytes: number): void {
+    if (!fs.existsSync(filePath)) {
+      return;
+    }
+
+    const stats = fs.statSync(filePath);
+    const currentDay = this.formatDateStamp(new Date());
+    const fileDay = this.formatDateStamp(stats.mtime);
+    const rotateByDay = fileDay != currentDay;
+    const rotateBySize = stats.size + incomingBytes > this.logRotationMaxBytes;
+
+    if (!rotateByDay && !rotateBySize) {
+      return;
+    }
+
+    const archivePath = this.nextArchivePath(filePath, rotateByDay ? fileDay : currentDay);
+    fs.renameSync(filePath, archivePath);
+    this.pruneServiceLogArchives(filePath);
+  }
+
+  private nextArchivePath(filePath: string, dateStamp: string): string {
+    const parsed = path.parse(filePath);
+    let candidate = path.join(parsed.dir, `${parsed.name}.${dateStamp}${parsed.ext}`);
+    let index = 1;
+
+    while (fs.existsSync(candidate)) {
+      candidate = path.join(parsed.dir, `${parsed.name}.${dateStamp}.${index}${parsed.ext}`);
+      index += 1;
+    }
+
+    return candidate;
+  }
+
+  private pruneServiceLogArchives(filePath: string): void {
+    const parsed = path.parse(filePath);
+    const prefix = `${parsed.name}.`;
+    const retainedArchiveCount = Math.max(0, this.logRotationMaxFiles - 1);
+    const archives = fs.readdirSync(parsed.dir)
+      .filter((file) => file.startsWith(prefix) && file.endsWith(parsed.ext))
+      .map((file) => ({
+        file,
+        fullPath: path.join(parsed.dir, file),
+        mtimeMs: fs.statSync(path.join(parsed.dir, file)).mtimeMs,
+      }))
+      .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+    for (const archive of archives.slice(retainedArchiveCount)) {
+      fs.unlinkSync(archive.fullPath);
+    }
+  }
+
+  private extractServiceNameFromLogFile(file: string): string {
+    return file
+      .replace(/\.log$/, '')
+      .replace(/\.\d{4}-\d{2}-\d{2}(?:\.\d+)?$/, '');
+  }
+
+  private listServiceJsonLogFiles(service?: string): Array<{ file: string; filePath: string; service: string }> {
+    if (!fs.existsSync(this.logStoragePath)) {
+      return [];
+    }
+
+    return fs.readdirSync(this.logStoragePath)
+      .filter((file) => file.endsWith('.log')
+        && !file.startsWith('.')
+        && !file.includes('application')
+        && !file.includes('error')
+        && !file.includes('.human.log'))
+      .map((file) => ({
+        file,
+        filePath: path.join(this.logStoragePath, file),
+        service: this.extractServiceNameFromLogFile(file),
+      }))
+      .filter((entry) => !service || entry.service === service)
+      .sort((a, b) => a.file.localeCompare(b.file));
   }
 
   /**
@@ -257,10 +365,9 @@ export class LogsService {
         this.logStoragePath,
         `${logEntry.service}.log`,
       );
-      fs.appendFileSync(
+      this.appendServiceLog(
         serviceLogPath,
         JSON.stringify(logData) + '\n',
-        'utf8',
       );
 
       const serviceHumanLogPath = path.join(
@@ -268,10 +375,9 @@ export class LogsService {
         `${logEntry.service}.human.log`,
       );
       const humanReadable = this.formatHumanReadable(logData);
-      fs.appendFileSync(
+      this.appendServiceLog(
         serviceHumanLogPath,
         humanReadable + '\n',
-        'utf8',
       );
     } catch (error) {
       console.error('Error ingesting log:', error);
@@ -291,17 +397,11 @@ export class LogsService {
     const logs: any[] = [];
 
     try {
-      const logFiles = fs.readdirSync(this.logStoragePath).filter(
-        (file) => file.endsWith('.log') && !file.includes('error') && !file.includes('.human.log'),
-      );
+      const logFiles = this.listServiceJsonLogFiles(filters.service);
 
-      for (const file of logFiles) {
-        if (filters.service && !file.includes(filters.service)) {
-          continue;
-        }
-
-        const filePath = path.join(this.logStoragePath, file);
-        const content = fs.readFileSync(filePath, 'utf8');
+      for (const entry of logFiles) {
+        const content = fs.readFileSync(entry.filePath, 'utf8');
+        const file = entry.file;
         const lines = content.split('\n').filter((line) => line.trim());
 
         for (const line of lines) {
@@ -347,11 +447,10 @@ export class LogsService {
     const windowMinutes = Math.max(1, Math.min(Number(options.windowMinutes) || 60, 24 * 60));
     const limit = Math.max(1, Math.min(Number(options.limit) || 25, 100));
     const cutoffMs = Date.now() - windowMinutes * 60 * 1000;
-    const serviceLogPath = path.join(this.logStoragePath, 'marathon.log');
     const rows: Array<{ timestamp: string; level: string; message: string }> = [];
 
-    if (fs.existsSync(serviceLogPath)) {
-      const content = fs.readFileSync(serviceLogPath, 'utf8');
+    for (const serviceLog of this.listServiceJsonLogFiles('marathon')) {
+      const content = fs.readFileSync(serviceLog.filePath, 'utf8');
       for (const line of content.split('\n')) {
         if (!line.trim()) continue;
         try {
@@ -496,17 +595,12 @@ export class LogsService {
     const allowedTenants = new Set(access.tenantIds || []);
     if (allowedTenants.size === 0 || !fs.existsSync(this.logStoragePath)) return entries;
 
-    const logFiles = fs.readdirSync(this.logStoragePath).filter((file) =>
-      file.endsWith('.log')
-      && !file.includes('application')
-      && !file.includes('error')
-      && !file.includes('.human.log'),
-    );
+    const logFiles = this.listServiceJsonLogFiles(filters.service);
 
-    for (const file of logFiles) {
-      const filePath = path.join(this.logStoragePath, file);
-      const content = fs.readFileSync(filePath, 'utf8');
+    for (const entry of logFiles) {
+      const content = fs.readFileSync(entry.filePath, 'utf8');
       const lines = content.split('\n');
+      const file = entry.file;
 
       lines.forEach((line, lineIndex) => {
         if (!line.trim()) return;
@@ -756,11 +850,9 @@ export class LogsService {
         return [];
       }
 
-      const logFiles = fs.readdirSync(this.logStoragePath).filter(
-        (file) => file.endsWith('.log') && !file.includes('application') && !file.includes('error') && !file.includes('.human.log'),
-      );
-
-      return logFiles.map((file) => file.replace('.log', ''));
+      return Array.from(new Set(
+        this.listServiceJsonLogFiles().map((entry) => entry.service),
+      )).sort();
     } catch (error) {
       console.error('Error getting services:', error);
       this.logger.error('Error getting services', { error: error instanceof Error ? error.message : String(error) });
