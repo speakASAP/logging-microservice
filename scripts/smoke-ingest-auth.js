@@ -12,9 +12,12 @@ function kubectl(args) {
   }).trim();
 }
 
-const pod = kubectl(['get', 'pod', '-l', 'app=logging-microservice', '-o', 'jsonpath={.items[0].metadata.name}']);
+const podJson = JSON.parse(kubectl(['get', 'pod', '-l', 'app=logging-microservice', '-o', 'json']));
+const pod = (podJson.items || []).find(
+  (item) => item.status?.phase === 'Running' && !item.metadata?.deletionTimestamp,
+)?.metadata?.name;
 if (!pod) {
-  throw new Error('logging-microservice pod not found');
+  throw new Error('running logging-microservice pod not found');
 }
 
 const payload = JSON.stringify({
