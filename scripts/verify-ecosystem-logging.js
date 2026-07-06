@@ -73,6 +73,7 @@ function deployImage(app) {
 const rows = services.map(({ deployment, expectedServiceName }) => {
   const pod = firstPodForApp(deployment);
   const envUrl = podEnv(pod, 'LOGGING_SERVICE_URL');
+  const envToken = podEnv(pod, 'LOGGING_SERVICE_TOKEN');
   const serviceName = podEnv(pod, 'SERVICE_NAME') || expectedServiceName;
   const central = centralLogStat(serviceName);
   return {
@@ -81,6 +82,7 @@ const rows = services.map(({ deployment, expectedServiceName }) => {
     image: deployImage(deployment) || '[MISSING]',
     service_name: serviceName,
     logging_service_url: envUrl ? '[SET]' : '[MISSING]',
+    logging_service_token: envToken ? '[SET]' : '[MISSING]',
     central_log: central.exists ? 'present' : '[MISSING]',
     central_detail: central.detail,
   };
@@ -88,7 +90,12 @@ const rows = services.map(({ deployment, expectedServiceName }) => {
 
 console.log(JSON.stringify({ namespace, generated_at: new Date().toISOString(), rows }, null, 2));
 
-const missing = rows.filter((row) => row.central_log !== 'present' || row.logging_service_url !== '[SET]');
+const missing = rows.filter(
+  (row) =>
+    row.central_log !== 'present' ||
+    row.logging_service_url !== '[SET]' ||
+    row.logging_service_token !== '[SET]',
+);
 if (missing.length > 0) {
   process.exitCode = 2;
 }
