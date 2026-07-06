@@ -14,7 +14,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "verify:ecosystem-logging": "node scripts/verify-ecosystem-logging.js"
+    "verify:ecosystem-logging": "node scripts/verify-ecosystem-logging.js",
+    "smoke:ingest-auth": "node scripts/smoke-ingest-auth.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
