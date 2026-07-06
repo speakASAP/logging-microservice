@@ -2,7 +2,7 @@
 const { execFileSync } = require('node:child_process');
 
 const namespace = process.env.K8S_NAMESPACE || 'statex-apps';
-const services = (process.argv.slice(2).length ? process.argv.slice(2) : [
+const serviceArgs = (process.argv.slice(2).length ? process.argv.slice(2) : [
   'auth-microservice',
   'payments-microservice',
   'orders-microservice',
@@ -15,6 +15,11 @@ const services = (process.argv.slice(2).length ? process.argv.slice(2) : [
   'backups-microservice',
   'crypto-ai-agent',
 ]).filter(Boolean);
+
+const services = serviceArgs.map((arg) => {
+  const [deployment, serviceName] = arg.split(':');
+  return { deployment, expectedServiceName: serviceName || deployment };
+});
 
 function kubectl(args, options = {}) {
   return execFileSync('kubectl', ['-n', namespace, ...args], {
@@ -65,15 +70,15 @@ function deployImage(app) {
   ]);
 }
 
-const rows = services.map((service) => {
-  const pod = firstPodForApp(service);
+const rows = services.map(({ deployment, expectedServiceName }) => {
+  const pod = firstPodForApp(deployment);
   const envUrl = podEnv(pod, 'LOGGING_SERVICE_URL');
-  const serviceName = podEnv(pod, 'SERVICE_NAME') || service;
+  const serviceName = podEnv(pod, 'SERVICE_NAME') || expectedServiceName;
   const central = centralLogStat(serviceName);
   return {
-    deployment: service,
+    deployment,
     pod: pod || '[MISSING]',
-    image: deployImage(service) || '[MISSING]',
+    image: deployImage(deployment) || '[MISSING]',
     service_name: serviceName,
     logging_service_url: envUrl ? '[SET]' : '[MISSING]',
     central_log: central.exists ? 'present' : '[MISSING]',
