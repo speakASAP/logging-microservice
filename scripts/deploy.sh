@@ -66,6 +66,16 @@ docker push "$IMAGE_LATEST"
 echo -e "${GREEN}✅ Image pushed: ${IMAGE}${NC}"
 deploy_timing_phase_end "Push image"
 
+deploy_timing_phase_start "Apply K8s manifests"
+echo -e "${YELLOW}Applying K8s manifests...${NC}"
+kubectl apply -f "$PROJECT_ROOT/k8s/pvc.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/configmap.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/external-secret.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/service.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/deployment.yaml"
+deploy_timing_phase_end "Apply K8s manifests"
+
 deploy_timing_phase_start "Update K8s deployment"
 echo -e "${YELLOW}Updating K8s deployment...${NC}"
 kubectl set image deployment/${SERVICE_NAME} \

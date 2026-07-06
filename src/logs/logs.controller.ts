@@ -6,12 +6,14 @@ import { Controller, Post, Get, Body, Query, HttpException, HttpStatus, UseGuard
 import { LogsService } from './logs.service';
 import { LogEntryDto } from './dto/log-entry.dto';
 import { AdminRoleGuard } from '../auth/admin-role.guard';
+import { LogIngestGuard } from '../auth/log-ingest.guard';
 
 @Controller('api/logs')
 export class LogsController {
   constructor(private logsService: LogsService) {}
 
   @Post()
+  @UseGuards(LogIngestGuard)
   async ingestLog(@Body() logEntryDto: LogEntryDto) {
     try {
       await this.logsService.ingest(logEntryDto);
@@ -66,6 +68,8 @@ export class LogsController {
     @Query('limit') limit?: number,
     @Query('task_id') taskId?: string,
     @Query('project_id') projectId?: string,
+    @Query('correlation_id') correlationId?: string,
+    @Query('q') q?: string,
   ) {
     try {
       const logs = await this.logsService.query({
@@ -76,6 +80,8 @@ export class LogsController {
         limit: limit ? Number(limit) : 100,
         taskId,
         projectId,
+        correlationId,
+        q,
       });
       return {
         success: true,

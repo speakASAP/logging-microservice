@@ -37,6 +37,9 @@ spec:
                 name: logging-microservice-config
             - secretRef:
                 name: logging-microservice-secret
+          volumeMounts:
+            - name: log-storage
+              mountPath: /app/logs
           startupProbe:
             httpGet:
               path: /health
@@ -66,3 +69,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+      volumes:
+        - name: log-storage
+          persistentVolumeClaim:
+            claimName: logging-microservice-logs

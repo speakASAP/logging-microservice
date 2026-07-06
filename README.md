@@ -175,7 +175,7 @@ logs/
 
 Human-readable format: `[YYYY-MM-DD HH:mm:ss] [LEVEL] [service] message | metadata`
 
-Rotation: daily, max 100 MB per file, 10 files retained. Logs are on the **pod filesystem (no PVC)** — they are lost on pod restart.
+Rotation: daily, max 100 MB per file, 10 files retained. Logs are stored on the `logging-microservice-logs` Kubernetes PVC mounted at `/app/logs`. Local per-pod console output remains a fallback, but central query storage must stay on the PVC.
 
 ## Local Development
 

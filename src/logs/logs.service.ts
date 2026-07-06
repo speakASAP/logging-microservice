@@ -393,6 +393,8 @@ export class LogsService {
     limit?: number;
     taskId?: string;
     projectId?: string;
+    correlationId?: string;
+    q?: string;
   }): Promise<any[]> {
     const logs: any[] = [];
 
@@ -413,6 +415,8 @@ export class LogsService {
             if (filters.endDate && logEntry.timestamp > filters.endDate) continue;
             if (filters.taskId && logEntry.task_id !== filters.taskId) continue;
             if (filters.projectId && logEntry.project_id !== filters.projectId) continue;
+            if (filters.correlationId && logEntry.correlation_id !== filters.correlationId) continue;
+            if (filters.q && !this.matchesTextQuery(logEntry, filters.q)) continue;
 
             logs.push(logEntry);
 
@@ -435,6 +439,15 @@ export class LogsService {
       .slice(0, filters.limit || 100);
   }
 
+
+  private matchesTextQuery(logEntry: StoredLogEntry, query: string): boolean {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return true;
+
+    const message = typeof logEntry.message === 'string' ? logEntry.message : '';
+    const metadata = logEntry.metadata ? JSON.stringify(logEntry.metadata) : '';
+    return message.toLowerCase().includes(needle) || metadata.toLowerCase().includes(needle);
+  }
 
   async getMarathonEventSummary(options: MarathonEventSummaryOptions = {}): Promise<{
     service: string;
