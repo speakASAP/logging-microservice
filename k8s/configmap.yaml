@@ -19,7 +19,6 @@ data:
   LOG_ROTATION_MAX_SIZE: "100m"
   LOG_ROTATION_MAX_FILES: "10"
   LOG_TIMESTAMP_FORMAT: "YYYY-MM-DD HH:mm:ss"
-  NGINX_NETWORK_NAME: "nginx-network"
   DOCKER_VOLUME_BASE_PATH: "./logs"
   PROJECT_BASE_PATH: "/home/ssf/Documents/Github/"
   # Service URLs - Auth is now resolved through Kubernetes DNS; payments still uses the transition host bridge.
