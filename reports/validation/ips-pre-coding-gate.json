@@ -3,7 +3,7 @@
   "execution_plans": {
     "execution_plan_count": 1,
     "execution_plan_files": [
-      "21_execution_plans/EP-TASK-001.md"
+      "docs/21_execution_plans/EP-TASK-001.md"
     ],
     "missing_validation_plan": []
   },
@@ -11,18 +11,18 @@
   "missing_immutable_files": [],
   "next_step": "start_controlled_coding",
   "project_invariants": {
-    "path": "17_governance/PROJECT_INVARIANTS.md",
+    "path": "docs/17_governance/PROJECT_INVARIANTS.md",
     "status": "pass"
   },
   "required_immutable_files": [
-    "00_constitution/CONSTITUTION.md",
-    "01_vision/VISION.md"
+    "docs/00_constitution/CONSTITUTION.md",
+    "docs/01_vision/VISION.md"
   ],
   "root": "/home/ssf/Documents/Github/logging-microservice",
   "schema_version": "1.0.0",
   "sensitive_data_findings": [],
   "shared_principles_with_dos": {
-    "path": "17_governance/SHARED_PRINCIPLES_WITH_DOS.md",
+    "path": "docs/17_governance/SHARED_PRINCIPLES_WITH_DOS.md",
     "reason": "cross_repo_mode_disabled",
     "status": "not_applicable"
   },
@@ -31,7 +31,7 @@
     "missing_upstream_traceability": [],
     "task_count": 1,
     "task_files": [
-      "11_tasks/TASK-001-implement-ips-baseline.md"
+      "docs/11_tasks/TASK-001-implement-ips-baseline.md"
     ]
   }
 }

@@ -23,10 +23,10 @@
   "unresolved_markers": [],
   "validation_reports": {
     "matching_reports": [
-      "12_validation/VAL-TASK-001-ips-baseline.md"
+      "docs/12_validation/VAL-TASK-001-ips-baseline.md"
     ],
     "reports": [
-      "12_validation/VAL-TASK-001-ips-baseline.md"
+      "docs/12_validation/VAL-TASK-001-ips-baseline.md"
     ],
     "status": "pass",
     "target": "TASK-001"

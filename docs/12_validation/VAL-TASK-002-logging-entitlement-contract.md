@@ -37,7 +37,7 @@ Result: pass.
 Documentation validation run on 2026-06-15:
 
 ```bash
-git diff --check -- 11_tasks/TASK-002-logging-entitlement-contract.md 21_execution_plans/EP-TASK-002-logging-entitlement-contract.md 22_goal_impact/GOAL-IMPACT-TASK-002.md 13_context_packages/CP-TASK-002-logging-entitlement-contract.md 14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md 12_validation/VAL-TASK-002-logging-entitlement-contract.md docs/intent/backend-contracts.md docs/intent/contracts-integration-assumptions.md docs/intent/execution-plan.md
+git diff --check -- docs/11_tasks/TASK-002-logging-entitlement-contract.md docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md docs/22_goal_impact/GOAL-IMPACT-TASK-002.md docs/13_context_packages/CP-TASK-002-logging-entitlement-contract.md docs/14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md docs/intent/backend-contracts.md docs/intent/contracts-integration-assumptions.md docs/intent/execution-plan.md
 ```
 
 Result: pass, no whitespace errors reported.
