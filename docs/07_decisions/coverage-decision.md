@@ -83,7 +83,57 @@ POSTing into a 401 since, and nothing surfaced it.
 - If a stdout-only service later needs post-incident reconstruction, the fix is to opt it in,
   not to revisit the DaemonSet.
 
+## Root cause, corrected 2026-08-18 (TASK-LOG-005)
+
+The 2026-07-06 diagnosis above ("senders were never issued a credential") was only half
+right, and the half that mattered was wrong. Credential distribution was **not** the
+blocker.
+
+After adding rejection logging to `LogIngestGuard`, production showed **6,276 rejected
+ingest attempts in 15 minutes** — every one `missing_credential`, meaning *no Authorization
+header was sent at all*. Wiring `LOGGING_SERVICE_TOKEN` into the pods did not change it.
+
+The real defect is in the **vendored shared logger** (`shared/logger/logger.service.ts`,
+9 copies across repos). It:
+
+1. Read only `LOGGING_SERVICE_URL` and **never sent an Authorization header**, so it could
+   never satisfy ingest auth once `LOG_INGEST_REQUIRE_AUTH=true` landed on 2026-07-06.
+2. Swallowed the resulting 401 — `// Silently fail`, logging only when
+   `NODE_ENV === 'development'`. That is why nine services went dark for six weeks with
+   nothing in any log.
+
+Defect 2 is a direct violation of the global NO SILENT FAILURES rule, sitting in the exact
+code path whose silence caused the outage.
+
+**Fixed** in `auth-microservice` and `notifications-microservice`: send `Bearer
+${LOGGING_SERVICE_TOKEN}` when set (omit the header entirely when not, rather than sending
+`Bearer undefined`), and report every failed shipment to stderr as structured JSON —
+throttled to once a minute, credential never printed.
+
+`payments-microservice` and `backups-microservice` carry variant copies that already handle
+auth and are shipping normally; they were left alone. The remaining copies
+(`allegro`, `aukro`, `bazos`, `flipflop`, `heureka`) belong to deprioritized services and
+are unpatched — tracked below.
+
+### Also corrected: "12 locked out" was too broad
+
+Probing each pod directly (POST with its own credential) showed the causes differ:
+
+| Service | Finding |
+|---|---|
+| `orders-microservice`, `suppliers-microservice` | **201 — credentials valid.** Not broken; they ship only on activity. Now in `LOG_IGNORE_STALE_SERVICES` and reported as `idle`, not `stale`. |
+| `auth-microservice`, `flipflop-product-service`, `prompts-microservice`, `notifications-microservice`, `monitoring-microservice` | Actively POSTing and rejected — shared-logger defect. |
+| `runlayer`, `minio-microservice` | 401 with their own token; credential now wired. |
+| `probe`, `logging-auth-smoke`, `logging-rollout-smoke` | One-off test artifacts, not services. Ignored. |
+
 ## Follow-on
 
-- **TASK-LOG-005** — issue ingest credentials to the 12 silent services, verify 201.
-- Diagnose `api-gateway`, `minio-microservice`, `marketing-microservice` separately.
+- [x] Wire `LOGGING_SERVICE_TOKEN` from the shared `logging-ingest-credentials` secret into
+      the 8 deployments that lacked it (2026-08-18).
+- [x] Fix the shared logger in `auth-microservice` + `notifications-microservice`.
+- [ ] Patch or retire the 5 unpatched vendored logger copies (`allegro`, `aukro`, `bazos`,
+      `flipflop`, `heureka`) — all deprioritized services, so low urgency.
+- [ ] `kube-state-metrics` posts to ingest and is rejected; it is infra and should either be
+      given a credential or stopped from posting.
+- [ ] Diagnose `api-gateway` and `marketing-microservice` (stopped 08-13/08-14, outside the
+      07-06 cluster).
