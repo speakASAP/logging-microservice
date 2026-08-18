@@ -137,6 +137,32 @@ type CustomerLogSummaryResponse = {
   by_service: Record<string, number>;
 };
 
+export type LogCoverageEntry = {
+  service: string;
+  last_seen: string;
+  age_hours: number;
+};
+
+export type LogCoverageReport = {
+  generated_at: string;
+  stale_after_hours: number;
+  healthy: boolean;
+  summary: {
+    expected: number;
+    known: number;
+    shipping: number;
+    stale: number;
+    missing: number;
+  };
+  shipping: LogCoverageEntry[];
+  stale: LogCoverageEntry[];
+  /** Quiet but deliberately not alerted on (LOG_IGNORE_STALE_SERVICES). */
+  idle: LogCoverageEntry[];
+  /** Service names currently suppressed from staleness alerting. */
+  ignored: string[];
+  missing: string[];
+};
+
 @Injectable()
 export class LogsService {
   private logger: winston.Logger;
@@ -871,6 +897,158 @@ export class LogsService {
       this.logger.error('Error getting services', { error: error instanceof Error ? error.message : String(error) });
       return [];
     }
+  }
+
+  /**
+   * Ingest coverage + staleness (TASK-LOG-004).
+   *
+   * Ingest is opt-in: a service that stops POSTing simply disappears, which is
+   * indistinguishable from a service that is merely idle. On 2026-07-06 eleven
+   * senders stopped at once — ingest auth was enforced without issuing them
+   * credentials — and it went unnoticed for six weeks.
+   *
+   * Reports, per known sender, when it last wrote and whether that is past the
+   * staleness threshold. Never returns an empty result to signal a failure:
+   * an unreadable log directory throws.
+   */
+  async getCoverage(): Promise<LogCoverageReport> {
+    if (!fs.existsSync(this.logStoragePath)) {
+      const message = `Log storage path does not exist: ${this.logStoragePath}`;
+      this.logger.error('Coverage check failed', { path: this.logStoragePath });
+      throw new Error(message);
+    }
+
+    let files: Array<{ file: string; filePath: string; service: string }>;
+    try {
+      // `listServiceJsonLogFiles` filters on the literal `.human.log`, which misses
+      // rotated human files (`svc.human.2026-08-16.log`). Those would otherwise be
+      // counted as a phantom `svc.human` sender and reported stale.
+      files = this.listServiceJsonLogFiles()
+        .filter((entry) => !/\.human\b/.test(entry.file) && !entry.service.endsWith('.human'));
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      this.logger.error('Coverage check failed to list log files', {
+        path: this.logStoragePath,
+        error: detail,
+      });
+      throw new Error(`Failed to list log files in ${this.logStoragePath}: ${detail}`);
+    }
+
+    const staleAfterHours = this.parseStaleAfterHours();
+    const now = Date.now();
+
+    // Most recent mtime wins per service — rotation means several files per sender.
+    const lastSeen = new Map<string, number>();
+    for (const entry of files) {
+      let mtimeMs: number;
+      try {
+        mtimeMs = fs.statSync(entry.filePath).mtimeMs;
+      } catch (error) {
+        // A file vanishing mid-rotation is expected; anything else is not.
+        if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') continue;
+        const detail = error instanceof Error ? error.message : String(error);
+        this.logger.error('Coverage check failed to stat log file', {
+          file: entry.filePath,
+          error: detail,
+        });
+        throw new Error(`Failed to stat ${entry.filePath}: ${detail}`);
+      }
+
+      const previous = lastSeen.get(entry.service);
+      if (previous === undefined || mtimeMs > previous) {
+        lastSeen.set(entry.service, mtimeMs);
+      }
+    }
+
+    // Some senders are legitimately quiet: they hold valid credentials and only
+    // write on activity. Alerting on those trains the alert to be ignored, so they
+    // are reported as `idle` rather than `stale` and do not affect `healthy`.
+    const ignored = this.parseIgnoredServices();
+
+    const shipping: LogCoverageEntry[] = [];
+    const stale: LogCoverageEntry[] = [];
+    const idle: LogCoverageEntry[] = [];
+
+    for (const [service, mtimeMs] of Array.from(lastSeen.entries()).sort()) {
+      const ageHours = (now - mtimeMs) / (60 * 60 * 1000);
+      const entry: LogCoverageEntry = {
+        service,
+        last_seen: new Date(mtimeMs).toISOString(),
+        age_hours: Math.round(ageHours * 100) / 100,
+      };
+
+      if (ageHours <= staleAfterHours) {
+        shipping.push(entry);
+      } else if (ignored.includes(service)) {
+        idle.push(entry);
+      } else {
+        stale.push(entry);
+      }
+    }
+
+    const expected = this.parseExpectedServices();
+    const known = new Set(lastSeen.keys());
+    const missing = expected.filter((service) => !known.has(service)).sort();
+
+    const report: LogCoverageReport = {
+      generated_at: new Date().toISOString(),
+      stale_after_hours: staleAfterHours,
+      healthy: stale.length === 0 && missing.length === 0,
+      summary: {
+        expected: expected.length > 0 ? expected.length : known.size,
+        known: known.size,
+        shipping: shipping.length,
+        stale: stale.length,
+        missing: missing.length,
+      },
+      shipping,
+      stale,
+      idle,
+      ignored,
+      missing,
+    };
+
+    // Staleness is a real regression, not a status line — make it visible.
+    if (stale.length > 0) {
+      this.logger.error('Log ingest staleness detected', {
+        stale_after_hours: staleAfterHours,
+        stale_services: stale.map((entry) => entry.service),
+        count: stale.length,
+      });
+    }
+    if (missing.length > 0) {
+      this.logger.error('Expected log senders have never shipped', {
+        missing_services: missing,
+        count: missing.length,
+      });
+    }
+
+    return report;
+  }
+
+  private parseStaleAfterHours(): number {
+    const raw = (process.env.LOG_STALE_AFTER_HOURS || '').trim();
+    if (!raw) return 24;
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new Error(`Invalid LOG_STALE_AFTER_HOURS: "${raw}" (expected a positive number of hours)`);
+    }
+    return parsed;
+  }
+
+  private parseIgnoredServices(): string[] {
+    return (process.env.LOG_IGNORE_STALE_SERVICES || '')
+      .split(',')
+      .map((service) => service.trim())
+      .filter(Boolean);
+  }
+
+  private parseExpectedServices(): string[] {
+    return (process.env.LOG_EXPECTED_SERVICES || '')
+      .split(',')
+      .map((service) => service.trim())
+      .filter(Boolean);
   }
 }
 

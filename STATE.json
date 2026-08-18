@@ -2,25 +2,30 @@
   "v": 1,
   "project": "logging-microservice",
   "stage": "production",
-  "health": "ok",
-  "cycle": 0,
-  "last_cycle_at": "2026-06-19T14:03:00Z",
-  "tasks_active": 0,
+  "health": "degraded",
+  "cycle": 1,
+  "last_cycle_at": "2026-08-17T20:30:00Z",
+  "tasks_active": 1,
   "tasks_failed_last_cycle": 0,
-  "open_task_ids": [],
-  "last_milestone": "log-rotation-production-verified-and-fixed",
-  "next_focus": "Project completed/frozen: no active goals, plans, tasks, blockers, or human/AI actions pending as of 2026-06-21.",
+  "open_task_ids": ["TASK-LOG-005"],
+  "last_milestone": "task-log-004-coverage-decided-and-instrumented",
+  "next_focus": "TASK-LOG-005: issue ingest credentials to the 12 services locked out since 2026-07-06 (LOG_INGEST_REQUIRE_AUTH enforced without distributing tokens), then diagnose api-gateway/minio/marketing separately. Deploy the coverage endpoint + staleness detector.",
   "blockers": [],
   "budget_units_used": 0,
   "metrics": {
     "custom": {
       "logging_admin_role_enforcement": "deployed",
       "log_rotation_verified": "deployed",
-      "per_service_rotation_fix": "deployed"
+      "per_service_rotation_fix": "deployed",
+      "ingest_coverage_endpoint": "implemented_not_deployed",
+      "ingest_staleness_detector": "implemented_not_deployed",
+      "senders_shipping": 17,
+      "senders_silent": 12,
+      "coverage_measured_at": "2026-08-17"
     }
   },
-  "project_status": "completed_frozen",
-  "completed_at": "2026-06-21",
-  "frozen_at": "2026-06-21",
-  "updated_at": "2026-06-21"
+  "project_status": "active",
+  "unfrozen_at": "2026-08-17",
+  "unfrozen_reason": "TASK-LOG-004 surfaced 12 services silently locked out of log ingest since 2026-07-06",
+  "updated_at": "2026-08-17"
 }

@@ -18,6 +18,16 @@ data:
   LOG_INGEST_REQUIRE_AUTH: "true"
   LOG_ROTATION_MAX_SIZE: "100m"
   LOG_ROTATION_MAX_FILES: "10"
+  # Ingest coverage + staleness (TASK-LOG-004). A known sender quiet for longer than
+  # LOG_STALE_AFTER_HOURS is reported stale by GET /api/logs/coverage; services listed
+  # in LOG_EXPECTED_SERVICES that have never shipped are reported missing.
+  LOG_STALE_AFTER_HOURS: "24"
+  # Quiet-but-healthy senders: valid credentials, ship only on activity. Verified
+  # 2026-08-18 by POSTing from each pod (orders/suppliers -> 201). Reported as
+  # `idle` in the coverage payload, never alerted on, so the alert stays actionable.
+  # `probe`/`*-smoke` are one-off test artifacts, not real services.
+  LOG_IGNORE_STALE_SERVICES: "orders-microservice,suppliers-microservice,probe,logging-auth-smoke,logging-rollout-smoke"
+  LOG_EXPECTED_SERVICES: "speakasap,speakasap-api-gateway,speakasap-assessment,speakasap-certification,speakasap-course,speakasap-education,speakasap-financial,speakasap-notification,speakasap-payment,speakasap-salary,speakasap-user,payments-microservice,catalog-microservice,warehouse-microservice,marathon,backups-microservice,crypto-ai-agent,auth-microservice,notifications-microservice,orders-microservice,docs-rag-microservice,monitoring-microservice,suppliers-microservice,runlayer,flipflop-order-service,flipflop-product-service,api-gateway,minio-microservice,marketing-microservice"
   LOG_TIMESTAMP_FORMAT: "YYYY-MM-DD HH:mm:ss"
   DOCKER_VOLUME_BASE_PATH: "./logs"
   PROJECT_BASE_PATH: "/home/ssf/Documents/Github/"

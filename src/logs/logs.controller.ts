@@ -100,6 +100,42 @@ export class LogsController {
     }
   }
 
+  /**
+   * Ingest coverage + staleness (TASK-LOG-004).
+   * Returns 503 when a known sender has gone quiet or an expected one never shipped —
+   * a degraded pipeline must not report 200.
+   */
+  @Get('coverage')
+  @UseGuards(AdminRoleGuard)
+  async getCoverage() {
+    let report: Awaited<ReturnType<LogsService['getCoverage']>>;
+    try {
+      report = await this.logsService.getCoverage();
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to compute log ingest coverage',
+          error: error instanceof Error ? error.message : String(error),
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    if (!report.healthy) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Log ingest coverage is degraded',
+          data: report,
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    return { success: true, data: report };
+  }
+
   @Get('services')
   @UseGuards(AdminRoleGuard)
   async getServices() {

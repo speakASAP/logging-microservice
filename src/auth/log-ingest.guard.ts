@@ -27,7 +27,41 @@ export class LogIngestGuard implements CanActivate {
       return true;
     }
 
+    // A rejected sender must be loud immediately. On 2026-07-06 ingest auth was
+    // enforced without distributing credentials; eleven services began failing here
+    // and this guard said nothing, so the outage stayed invisible for six weeks.
+    // Never log the presented credential — only that one was absent or unrecognised.
+    this.reportRejection(
+      serviceName,
+      this.hasAnyCredential(request) ? 'invalid_credential' : 'missing_credential',
+    );
+
     throw new UnauthorizedException('Logging ingest credential required');
+  }
+
+  /**
+   * Emit a structured, greppable error line for every rejected ingest attempt.
+   * stdout is the only channel available here (writing into LogsService would
+   * recurse through the very path being rejected).
+   */
+  private reportRejection(serviceName: string, reason: string): void {
+    console.error(JSON.stringify({
+      level: 'error',
+      event: 'log_ingest_rejected',
+      message: `Log ingest rejected for service "${serviceName || '<unnamed>'}" (${reason})`,
+      service: serviceName || '<unnamed>',
+      reason,
+      timestamp: new Date().toISOString(),
+      duration_ms: 0,
+      hint: 'Sender holds no valid ingest credential — it is silently losing logs.',
+    }));
+  }
+
+  private hasAnyCredential(request: RequestWithHeaders): boolean {
+    const authorization = this.firstHeader(request, 'authorization');
+    const apiKey = this.firstHeader(request, 'x-logging-api-key')
+      || this.firstHeader(request, 'x-api-key');
+    return Boolean(authorization || apiKey);
   }
 
   private requireAuth(): boolean {
@@ -43,6 +77,7 @@ export class LogIngestGuard implements CanActivate {
     if (allowed.size === 0) return;
 
     if (!serviceName || !allowed.has(serviceName)) {
+      this.reportRejection(serviceName, 'not_in_allowlist');
       throw new ForbiddenException('Logging service is not allowed to ingest logs');
     }
   }
