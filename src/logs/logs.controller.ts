@@ -5,7 +5,7 @@
 import { Controller, Post, Get, Body, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { LogsService } from './logs.service';
 import { LogEntryDto } from './dto/log-entry.dto';
-import { AdminRoleGuard } from '../auth/admin-role.guard';
+import { AdminRoleGuard, LogReadRoleGuard } from '../auth/admin-role.guard';
 import { LogIngestGuard } from '../auth/log-ingest.guard';
 
 @Controller('api/logs')
@@ -34,6 +34,7 @@ export class LogsController {
   }
 
   @Get('marathon-events/summary')
+  @UseGuards(LogReadRoleGuard)
   async getMarathonEventsSummary(
     @Query('windowMinutes') windowMinutes?: number,
     @Query('limit') limit?: number,

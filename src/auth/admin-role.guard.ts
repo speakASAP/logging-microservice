@@ -12,6 +12,16 @@ const REQUIRED_ADMIN_ROLES = new Set([
   'internal:logging-microservice:admin',
 ]);
 
+/**
+ * Roles allowed on read-only log endpoints. Service principals that only need to
+ * read summaries (monitoring's marathon panel) get `:readonly` and must not be
+ * able to reach admin surfaces, so this set is checked only where it is opted in.
+ */
+const READ_ONLY_ROLES = new Set([
+  ...REQUIRED_ADMIN_ROLES,
+  'internal:logging-microservice:readonly',
+]);
+
 type AuthValidateResponse = {
   valid?: boolean;
   user?: {
@@ -21,6 +31,8 @@ type AuthValidateResponse = {
 
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
+  constructor(private readonly allowedRoles: ReadonlySet<string> = REQUIRED_ADMIN_ROLES) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const authorization = request.headers?.authorization;
@@ -36,11 +48,11 @@ export class AdminRoleGuard implements CanActivate {
 
     const user = await this.validateToken(token);
     const roles = Array.isArray(user.roles) ? user.roles : [];
-    const hasAdminRole = roles.some(
-      (role) => typeof role === 'string' && REQUIRED_ADMIN_ROLES.has(role),
+    const hasRole = roles.some(
+      (role) => typeof role === 'string' && this.allowedRoles.has(role),
     );
 
-    if (!hasAdminRole) {
+    if (!hasRole) {
       throw new ForbiddenException('Logging admin role required');
     }
 
@@ -74,5 +86,16 @@ export class AdminRoleGuard implements CanActivate {
       }
       throw new UnauthorizedException('Auth validation unavailable');
     }
+  }
+}
+
+/**
+ * Read-only variant for endpoints that expose summaries rather than raw log
+ * contents. Accepts the admin roles plus `internal:logging-microservice:readonly`.
+ */
+@Injectable()
+export class LogReadRoleGuard extends AdminRoleGuard {
+  constructor() {
+    super(READ_ONLY_ROLES);
   }
 }
