@@ -31,7 +31,12 @@ type AuthValidateResponse = {
 
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
-  constructor(private readonly allowedRoles: ReadonlySet<string> = REQUIRED_ADMIN_ROLES) {}
+  /**
+   * Roles this guard accepts. Kept as an overridable field rather than a
+   * constructor parameter: Nest's DI cannot resolve a ReadonlySet, and injecting
+   * one makes the whole module fail to instantiate at boot.
+   */
+  protected readonly allowedRoles: ReadonlySet<string> = REQUIRED_ADMIN_ROLES;
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -95,7 +100,5 @@ export class AdminRoleGuard implements CanActivate {
  */
 @Injectable()
 export class LogReadRoleGuard extends AdminRoleGuard {
-  constructor() {
-    super(READ_ONLY_ROLES);
-  }
+  protected readonly allowedRoles: ReadonlySet<string> = READ_ONLY_ROLES;
 }
