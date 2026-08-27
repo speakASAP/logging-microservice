@@ -91,9 +91,13 @@ export class LogIngestGuard implements CanActivate {
   }
 
   private hasValidBearer(request: RequestWithHeaders): boolean {
+    // LOG_INGEST_BEARER_TOKENS is the only accepted set. JWT_TOKEN used to be
+    // added here as well, which silently made the shared a2880693 value — the
+    // credential for five unrelated services — a valid ingest key. It was
+    // measured on 2026-08-27 to have no senders: every ingesting pod resolves
+    // LOGGING_SERVICE_TOKEN, and the three that fall back to JWT_TOKEN
+    // (aukro, bazos, heureka) send their logs unauthenticated.
     const configured = this.csvToSet(process.env.LOG_INGEST_BEARER_TOKENS);
-    const jwtToken = (process.env.JWT_TOKEN || '').trim();
-    if (jwtToken) configured.add(jwtToken);
     if (configured.size === 0) return false;
 
     const authorization = this.firstHeader(request, 'authorization');
