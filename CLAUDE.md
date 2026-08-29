@@ -19,13 +19,17 @@ Read those first, then follow the repository-specific notes below and the curren
 
 ---
 
-## Knowledge Retrieval — docs-rag-microservice (MANDATORY, query before reading files)
+## Knowledge Retrieval
 
-**Query the RAG before reading source files** — saves 2000-5000 tokens per answer.
+Use `docs-rag-microservice` for bounded discovery when it is healthy, then
+verify deployment, security, database, integration and public-contract facts
+against the cited Git source. Git remains authoritative.
 
-The pod receives `JWT_TOKEN` from Vault `secret/prod/logging-microservice` via ExternalSecret. The production image includes `curl`; use the in-pod token and never print it. See `AGENTS.md` for the curl command.
+Authority and fallback rules:
+`/home/ssf/Documents/Github/shared/docs/DOCUMENTATION_AUTHORITY.md`.
 
----
+Do not generate tokens in documentation or assume an unconfident/failed RAG
+response means that source documentation does not exist.
 
 ## logging-microservice
 
