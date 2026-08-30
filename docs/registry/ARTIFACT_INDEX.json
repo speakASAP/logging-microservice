@@ -1,0 +1,189 @@
+{
+  "schema_version": "1.0",
+  "repository": "logging-microservice",
+  "generated_at": "2026-08-30T18:49:06Z",
+  "artifacts": [
+    {
+      "id": "ADR-001",
+      "type": "decision",
+      "status": "done",
+      "title": "Use File-Based Rotated Log Storage",
+      "path": "docs/07_decisions/ADR-001-file-based-rotated-log-storage.md",
+      "parent_ids": [],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "FEAT-001",
+      "type": "feature",
+      "status": "draft",
+      "title": "Centralized Structured Logging",
+      "path": "docs/10_features/FEAT-001-centralized-structured-logging.md",
+      "parent_ids": [],
+      "runlayer_goal_id": null,
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "MS-001",
+      "type": "milestone",
+      "status": "done",
+      "title": "IPS Baseline Adoption",
+      "path": "docs/09_milestones/MS-001-ips-baseline.md",
+      "parent_ids": [
+        "FEAT-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "TASK-001",
+      "type": "task",
+      "status": "done",
+      "title": "Implement IPS Baseline",
+      "path": "docs/11_tasks/TASK-001-implement-ips-baseline.md",
+      "parent_ids": [
+        "FEAT-001",
+        "MS-001"
+      ],
+      "runlayer_task_id": null,
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "EP-TASK-001",
+      "type": "execution_plan",
+      "status": "done",
+      "title": "Implement IPS Baseline",
+      "path": "docs/21_execution_plans/EP-TASK-001.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "CP-TASK-001",
+      "type": "context_package",
+      "status": "done",
+      "title": "IPS Baseline Context Package",
+      "path": "docs/13_context_packages/CP-TASK-001-implement-ips-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-001",
+      "type": "prompt",
+      "status": "done",
+      "title": "Implement IPS Baseline",
+      "path": "docs/14_prompts/PROMPT-TASK-001-implement-ips-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "VAL-TASK-001",
+      "type": "validation",
+      "status": "validated",
+      "title": "IPS Baseline Validation",
+      "path": "docs/12_validation/VAL-TASK-001-ips-baseline.md",
+      "parent_ids": [
+        "TASK-001"
+      ],
+      "updated_at": "2026-06-13T00:00:00Z"
+    },
+    {
+      "id": "TASK-002",
+      "type": "task",
+      "status": "blocked",
+      "title": "Logging Entitlement Contract",
+      "path": "docs/11_tasks/TASK-002-logging-entitlement-contract.md",
+      "parent_ids": [
+        "FEAT-001"
+      ],
+      "runlayer_task_id": null,
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "EP-TASK-002",
+      "type": "execution_plan",
+      "status": "blocked",
+      "title": "Logging Entitlement Contract",
+      "path": "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "CP-TASK-002",
+      "type": "context_package",
+      "status": "draft",
+      "title": "Logging Entitlement Contract",
+      "path": "docs/13_context_packages/CP-TASK-002-logging-entitlement-contract.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "PROMPT-TASK-002",
+      "type": "prompt",
+      "status": "draft",
+      "title": "Logging Entitlement Contract",
+      "path": "docs/14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "VAL-TASK-002",
+      "type": "validation",
+      "status": "validated",
+      "title": "Logging Entitlement Contract",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md",
+      "parent_ids": [
+        "TASK-002"
+      ],
+      "updated_at": "2026-06-15T00:00:00Z"
+    },
+    {
+      "id": "TASK-LOG-004",
+      "type": "task",
+      "status": "done",
+      "title": "Decision and coverage/staleness instrumentation",
+      "path": "TASKS.md",
+      "parent_ids": [],
+      "runlayer_task_id": null,
+      "updated_at": "2026-08-17T00:00:00Z"
+    },
+    {
+      "id": "TASK-LOG-005",
+      "type": "task",
+      "status": "ready",
+      "title": "Issue ingest credentials to silent services and verify 201 responses",
+      "path": "TASKS.md",
+      "parent_ids": [
+        "TASK-LOG-004"
+      ],
+      "runlayer_task_id": null,
+      "updated_at": "2026-08-17T00:00:00Z"
+    },
+    {
+      "id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
+      "type": "validation",
+      "status": "validated",
+      "title": "Phase-1 planning standardization pilot validation",
+      "path": "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
+      "parent_ids": [
+        "TASK-LOG-005"
+      ],
+      "updated_at": "2026-08-30T18:49:06Z"
+    }
+  ],
+  "warnings": [
+    "[UNKNOWN: RunLayer project slug/permalink not linked; project_registration is intentionally unlinked for this pilot.]",
+    "[MISSING: TASKS.md does not yet include a schema_version 1.0 metadata header; legacy structure was retained to avoid unsafe restructuring.]",
+    "[MISSING: TASK-LOG-005 has no dedicated docs/11 task artifact and is indexed from TASKS.md backlog only.]",
+    "[UNKNOWN: Legacy STATE.json referenced TASK-LOG-006, but no matching tracked task artifact is present in TASKS.md.]"
+  ]
+}

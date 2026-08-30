@@ -1,37 +1,33 @@
 {
-  "v": 1,
-  "project": "logging-microservice",
-  "stage": "production",
-  "health": "ok",
-  "cycle": 2,
-  "last_cycle_at": "2026-08-18T06:50:00Z",
-  "tasks_active": 1,
-  "tasks_failed_last_cycle": 0,
-  "open_task_ids": [
-    "TASK-LOG-006"
-  ],
-  "last_milestone": "TASK-LOG-005 complete: shared logger ingest auth fixed, alerting live",
-  "next_focus": "TASK-LOG-006: remaining ingest gaps \u2014 prompts-microservice, kube-state-metrics, api-gateway/marketing (separate cause), and 5 unpatched vendored logger copies.",
-  "blockers": [],
-  "budget_units_used": 0,
-  "metrics": {
-    "custom": {
-      "logging_admin_role_enforcement": "deployed",
-      "log_rotation_verified": "deployed",
-      "per_service_rotation_fix": "deployed",
-      "ingest_coverage_endpoint": "deployed",
-      "ingest_staleness_detector": "deployed_cron_daily_0345",
-      "senders_shipping": 17,
-      "senders_silent": 12,
-      "coverage_measured_at": "2026-08-17",
-      "ingest_rejection_alerting": "deployed",
-      "shared_logger_auth_fixed": "auth-microservice,notifications-microservice,flipflop",
-      "services_restored": "auth-microservice,notifications-microservice",
-      "rejects_observed_before_fix": "6276 per 15min"
-    }
+  "schema_version": "1.0",
+  "repository": "logging-microservice",
+  "service": {
+    "name": "logging-microservice",
+    "kind": "service",
+    "lifecycle": "active",
+    "deployment": "kubernetes"
   },
-  "project_status": "active",
-  "unfrozen_at": "2026-08-17",
-  "unfrozen_reason": "TASK-LOG-004 surfaced 12 services silently locked out of log ingest since 2026-07-06",
-  "updated_at": "2026-08-18"
+  "planning": {
+    "status": "active",
+    "active_goal_ids": [],
+    "next_ready_goal_ids": [
+      "TASK-LOG-005"
+    ],
+    "blocked_goal_ids": [
+      "TASK-002"
+    ],
+    "active_workstream_ids": [],
+    "last_updated_at": "2026-08-30T18:49:06Z"
+  },
+  "delivery": {
+    "last_validation_id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
+    "last_validation_status": "passed",
+    "validation_debt_count": 1,
+    "last_deployment_commit": null
+  },
+  "collection": {
+    "profile": "ips-full",
+    "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
+    "status_source": "human-and-agent-maintained"
+  }
 }

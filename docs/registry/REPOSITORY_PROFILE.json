@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "repository": "logging-microservice",
+  "profile": "ips-full",
+  "project_registration": {
+    "runlayer_project_slug": null,
+    "runlayer_permalink": null,
+    "status": "unlinked",
+    "warning": "[UNKNOWN: RunLayer project slug/permalink is not documented in tracked logging-microservice artifacts]"
+  },
+  "collectable_paths": [
+    "AGENTS.md",
+    "AGENT_OPERATIONS.md",
+    "BUSINESS.md",
+    "SYSTEM.md",
+    "TASKS.md",
+    "STATE.json",
+    "docs/07_decisions/ADR-001-file-based-rotated-log-storage.md",
+    "docs/08_roadmap/ROADMAP.md",
+    "docs/09_milestones/MS-001-ips-baseline.md",
+    "docs/10_features/FEAT-001-centralized-structured-logging.md",
+    "docs/11_tasks/TASK-001-implement-ips-baseline.md",
+    "docs/11_tasks/TASK-002-logging-entitlement-contract.md",
+    "docs/12_validation/VAL-TASK-001-ips-baseline.md",
+    "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md",
+    "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
+    "docs/13_context_packages/CP-TASK-001-implement-ips-baseline.md",
+    "docs/13_context_packages/CP-TASK-002-logging-entitlement-contract.md",
+    "docs/14_prompts/PROMPT-TASK-001-implement-ips-baseline.md",
+    "docs/14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md",
+    "docs/21_execution_plans/EP-TASK-001.md",
+    "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md",
+    "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+    "docs/22_goal_impact/GOAL-IMPACT-TASK-002.md",
+    "docs/orchestrator/VALIDATION_DEBT.md",
+    "docs/registry/ARTIFACT_INDEX.json"
+  ],
+  "excluded_path_patterns": [
+    ".env",
+    ".env.*",
+    "**/secrets/**",
+    "**/*.pem",
+    "**/node_modules/**",
+    "**/coverage/**"
+  ],
+  "owners": {
+    "business_intent": "human",
+    "technical_system": "service-owner",
+    "planning_state": "repository-orchestrator",
+    "integration": "service-owner",
+    "registry_contract": "repository-orchestrator"
+  }
+}
