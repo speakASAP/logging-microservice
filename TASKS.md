@@ -1,5 +1,17 @@
 # Tasks: logging-microservice
 
+## Active
+
+None. See Ready Next.
+
+## Ready Next
+
+- TASK-LOG-005 (see Backlog below).
+
+## Blocked
+
+No tasks are currently blocked.
+
 ## Backlog
 
 - [ ] **TASK-LOG-005**: issue ingest credentials to the 12 services locked out since 2026-07-06
@@ -24,6 +36,10 @@
       typecheck clean and proven live via a deliberate TS2322. Not yet deployed.
 - [x] Verified and fixed production per-service log rotation on 2026-06-19; `rotation-check.log` and `rotation-check.human.log` archived to dated files after a live 105 MB rollover probe, deploy image `localhost:5000/logging-microservice:927853c`, rollout and health check passed.
 - [x] Deployed Auth role enforcement for logging admin read endpoints to production on 2026-06-13. Image `localhost:5000/logging-microservice:4769c51`; rollout and health check passed.
+
+## Handoff
+
+Current owner: engineering. Next concrete action: issue ingest credentials for TASK-LOG-005 and verify 201 responses from the 12 previously-locked-out services.
 
 ## Project Completion Marker
 

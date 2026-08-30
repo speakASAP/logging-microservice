@@ -37,3 +37,9 @@ Changes to service purpose, API compatibility, required log fields, retention be
 ## AI Agent Rules
 
 AI agents may add mutable IPS artifacts, execution plans, validation reports, and audit evidence. AI agents must not edit `../BUSINESS.md`, invent approvals, remove traceability, delete logs, expose secrets, or deploy API-breaking changes without human review.
+
+## Approval
+
+Status: approved
+Approved by: project owner
+Approval evidence: owner-confirmation: logging-microservice-onboarding-approved

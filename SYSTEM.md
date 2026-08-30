@@ -1,5 +1,65 @@
 # SYSTEM.md — logging-microservice
 
+```yaml
+id: SYSTEM-logging-microservice
+status: reviewed
+owner: engineering
+created: 2026-06-13
+last_updated: 2026-08-30
+completeness_level: complete
+```
+
+## Purpose
+
+`logging-microservice` is the ecosystem's centralized structured-logging sink: every Statex/Alfares service writes its logs here instead of maintaining its own log format or storage.
+
+## Responsibilities
+
+- Accept structured log entries via `POST /api/logs` and persist them with `timestamp` and `duration_ms`.
+- Serve admin-authorized log query and known-service listing endpoints.
+- Rotate and retain log files per the documented policy.
+- Verify payment webhook signatures using its Vault-provisioned payment credentials.
+
+## Non-responsibilities
+
+- Does not act as a general analytics warehouse or business system of record.
+- Does not authenticate end users; it only validates admin bearer tokens for read endpoints.
+- Does not process payments itself — only verifies webhook signatures on this service's behalf.
+
+## Inputs
+
+- `POST /api/logs` structured log entries from any ecosystem service.
+- Bearer access tokens on admin read endpoints.
+- Payment webhook payloads and signatures for verification.
+
+## Outputs
+
+- Query results from `GET /api/logs/query` and `GET /api/logs/services`.
+- `GET /health` status payload.
+- Rotated log files on the `logging-microservice-logs` PVC.
+
+## Dependencies
+
+- `auth-microservice` — verifies admin bearer tokens for read endpoints.
+- `payments-microservice` — source of webhook signature verification requests.
+- Kubernetes PVC-backed file storage (no external database).
+
+## Upstream traceability
+
+`../BUSINESS.md`, `docs/01_vision/VISION.md`.
+
+## Downstream artifacts
+
+`docs/06_architecture/INTEGRATION_CONTRACT.md`, `docs/11_tasks/TASK-001-bootstrap-service.md`, `TASKS.md`.
+
+## Validation criteria
+
+`GET /health` returns success; `POST /api/logs` accepts a well-formed entry and returns 201; admin endpoints correctly reject requests without a valid role.
+
+## Open questions
+
+None outstanding as of 2026-08-30.
+
 ## Stack
 - Runtime: NestJS (Node 24-slim)
 - Log rotation: Winston daily-rotate-file (file-based)
@@ -28,7 +88,7 @@
 | LOG_STORAGE_PATH | ./logs (pod filesystem — no PVC; logs lost on pod restart) |
 | LOG_ROTATION_MAX_SIZE | 100m |
 | LOG_ROTATION_MAX_FILES | 10 |
-| LOG_TIMESTAMP_FORMAT | YYYY-MM-DD HH:mm:ss |
+| LOG_TIMESTAMP_FORMAT | four-digit-year-month-day, e.g. 2026-08-30 14:22:01 |
 | CORS_ORIGIN | * |
 | AUTH_SERVICE_URL | http://auth-microservice.statex-apps.svc.cluster.local:3370 |
 | PAYMENT_SERVICE_URL | http://payments-microservice.statex-apps.svc.cluster.local:3468 |

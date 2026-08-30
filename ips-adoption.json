@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "profile": "runtime-service",
+  "project": {
+    "name": "logging-microservice",
+    "repository": "https://github.com/speakASAP/logging-microservice.git"
+  },
+  "standard": {
+    "repository": "https://github.com/speakASAP/intent-preservation-system",
+    "revision": "3e36f64c11e31b878fd2fe09267426738b25ae7f"
+  },
+  "artifacts": {
+    "readme": "README.md",
+    "business": "BUSINESS.md",
+    "system": "SYSTEM.md",
+    "agents": "AGENTS.md",
+    "operations": "AGENT_OPERATIONS.md",
+    "claude": "CLAUDE.md",
+    "tasks": "TASKS.md",
+    "state": "STATE.json",
+    "constitution": "docs/00_constitution/CONSTITUTION.md",
+    "vision": "docs/01_vision/VISION.md",
+    "integrationContract": "docs/06_architecture/INTEGRATION_CONTRACT.md",
+    "projectInvariants": "docs/17_governance/PROJECT_INVARIANTS.md",
+    "validationDebt": "docs/orchestrator/VALIDATION_DEBT.md",
+    "bootstrapTask": "docs/11_tasks/TASK-001-bootstrap-service.md",
+    "bootstrapGoalImpact": "docs/22_goal_impact/GOAL-IMPACT-TASK-001.md",
+    "bootstrapExecutionPlan": "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+    "bootstrapValidation": "docs/12_validation/VAL-TASK-001-bootstrap-service.md"
+  },
+  "integrationReview": [
+    {
+      "capability": "auth",
+      "component": "auth-microservice",
+      "decision": "required",
+      "reason": "Admin log query/services endpoints validate bearer tokens against auth-microservice roles.",
+      "contract": "Bearer JWT with global:superadmin/app:logging-microservice:admin/internal:logging-microservice:admin",
+      "configuration": "AUTH_SERVICE_URL ConfigMap value",
+      "failureMode": "Admin endpoints return 401/403; ingestion unaffected",
+      "validation": "curl with/without valid admin token against /api/logs/query"
+    },
+    {
+      "capability": "postgres",
+      "component": "db-server-postgres",
+      "decision": "not-applicable",
+      "reason": "Log storage is file-based (Winston daily-rotate) on a PVC; no relational database is used.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "redis",
+      "component": "db-server-redis",
+      "decision": "not-applicable",
+      "reason": "No caching or session layer is used by this service.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "logging",
+      "component": "logging-microservice",
+      "decision": "required",
+      "reason": "This service is itself the ecosystem logging sink; it fulfils the logging requirement by writing structured entries directly into its own rotated file storage instead of forwarding them to a separate instance.",
+      "contract": "Internal Winston structured write to logs/*.log (no external HTTP call to itself)",
+      "configuration": "LOG_STORAGE_PATH, LOG_ROTATION_MAX_SIZE, LOG_ROTATION_MAX_FILES ConfigMap values",
+      "failureMode": "Write failure (e.g. full/unavailable PVC) returns 500 to the caller; caller falls back to local console logging per documented client best practices",
+      "validation": "Log rotation and ingestion tests (see TASKS.md rotation verification history)"
+    },
+    {
+      "capability": "notifications",
+      "component": "notifications-microservice",
+      "decision": "not-applicable",
+      "reason": "This service does not send end-user notifications.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "ai",
+      "component": "ai-microservice",
+      "decision": "not-applicable",
+      "reason": "No AI-driven behavior in this service.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "payments",
+      "component": "payments-microservice",
+      "decision": "required",
+      "reason": "Handles payment webhook signature verification via PAYMENT_API_KEY/PAYMENT_APPLICATION_ID/PAYMENT_WEBHOOK_API_KEY (documented in SYSTEM.md).",
+      "contract": "Payment webhook signature verification",
+      "configuration": "Vault secret/prod/logging-microservice via ExternalSecret",
+      "failureMode": "Signature verification failure rejects the webhook call; logging ingestion is unaffected",
+      "validation": "Webhook signature check unit/integration test"
+    },
+    {
+      "capability": "catalog",
+      "component": "catalog-microservice",
+      "decision": "not-applicable",
+      "reason": "No catalog data is read or written.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "orders",
+      "component": "orders-microservice",
+      "decision": "not-applicable",
+      "reason": "No order data is read or written.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "warehouse",
+      "component": "warehouse-microservice",
+      "decision": "not-applicable",
+      "reason": "No warehouse data is read or written.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "invoices",
+      "component": "invoices-microservice",
+      "decision": "not-applicable",
+      "reason": "No invoice data is read or written.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "object-storage",
+      "component": "minio-microservice",
+      "decision": "not-applicable",
+      "reason": "Logs are stored on a Kubernetes PVC, not MinIO.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "event-bus",
+      "component": "RabbitMQ",
+      "decision": "not-applicable",
+      "reason": "This service is called synchronously over HTTP only; it does not publish or consume ecosystem events.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    },
+    {
+      "capability": "docs-rag",
+      "component": "docs-rag-microservice",
+      "decision": "required",
+      "reason": "Project documentation must be discoverable",
+      "contract": "Direct Git repository ingestion",
+      "configuration": "shared/config/ecosystem-repositories.json",
+      "failureMode": "Git remains authoritative when retrieval is unavailable or unconfident",
+      "validation": "Distinctive project phrase resolves to the owning repository path"
+    },
+    {
+      "capability": "monitoring",
+      "component": "monitoring-microservice",
+      "decision": "required",
+      "reason": "Runtime health must be observable",
+      "contract": "GET /health plus Kubernetes probes",
+      "configuration": "Deployment probes and service metadata",
+      "failureMode": "Readiness prevents unhealthy rollout",
+      "validation": "Health and readiness checks pass"
+    },
+    {
+      "capability": "backups",
+      "component": "backups-microservice",
+      "decision": "not-applicable",
+      "reason": "Log retention is handled by in-service rotation (10 files, 100 MB max); no centralized backup integration is documented.",
+      "contract": "n/a",
+      "configuration": "n/a",
+      "failureMode": "n/a",
+      "validation": "n/a"
+    }
+  ]
+}

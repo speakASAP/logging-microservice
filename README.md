@@ -9,7 +9,36 @@ Centralized structured logging for the ecosystem. All services send logs here.
 → Technical spec (k8s resources, env vars, Vault secrets): [SYSTEM.md](SYSTEM.md)  
 → Deployment, rollback, secrets, troubleshooting: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-## API
+## Status
+
+Production, actively deployed to Kubernetes namespace `statex-apps`. Depended on by every other ecosystem service via `LOGGING_SERVICE_URL`.
+
+## Documentation Authority
+
+`BUSINESS.md` (human-owned business intent) and `SYSTEM.md` (technical spec) are authoritative for this service. This README summarizes usage; see `docs/00_constitution/CONSTITUTION.md` and `docs/01_vision/VISION.md` for the approved IPS baseline.
+
+## Capabilities
+
+- Structured log ingestion (`POST /api/logs`) with required `timestamp` and `duration_ms` tracking.
+- Admin-authorized log query and known-service listing.
+- `GET /health` for Kubernetes liveness/readiness probes.
+- Daily-rotated, file-based log storage on a Kubernetes PVC.
+
+## Configuration
+
+Non-secret configuration is set via the `logging-microservice-config` ConfigMap (`NODE_ENV`, `SERVICE_NAME`, `PORT`, `LOG_LEVEL`, `LOG_STORAGE_PATH`, `LOG_ROTATION_MAX_SIZE`, `LOG_ROTATION_MAX_FILES`, `LOG_TIMESTAMP_FORMAT`, `CORS_ORIGIN`, `AUTH_SERVICE_URL`, `PAYMENT_SERVICE_URL`). Secrets are delivered via Vault -> ExternalSecret -> Kubernetes Secret at `secret/prod/logging-microservice`. See `SYSTEM.md` for the full table.
+
+## Deployment
+
+Deployed to the `statex-apps` namespace via the shared serialized deploy runner (`scripts/deploy.sh`), image `localhost:5000/logging-microservice:latest`, Traefik ingress at `logging.alfares.cz` with cert-manager TLS. See `SYSTEM.md` for the Kubernetes resource list.
+
+## Health and Observability
+
+`GET /health` returns `{ success, status, timestamp, service }`. This service is itself the ecosystem's central logging sink, so its own operational health is monitored via `monitoring-microservice` and Kubernetes liveness/readiness probes rather than by calling itself.
+
+## Interfaces
+
+### POST /api/logs
 
 ### POST /api/logs
 
@@ -177,7 +206,9 @@ Human-readable format: `[YYYY-MM-DD HH:mm:ss] [LEVEL] [service] message | metada
 
 Rotation: daily, max 100 MB per file, 10 files retained. Logs are stored on the `logging-microservice-logs` Kubernetes PVC mounted at `/app/logs`. Local per-pod console output remains a fallback, but central query storage must stay on the PVC.
 
-## Local Development
+## Development
+
+Local development uses Docker Compose against dev-only values sourced from Vault `secret/prod/logging-microservice`.
 
 ```bash
 cp .env.example .env

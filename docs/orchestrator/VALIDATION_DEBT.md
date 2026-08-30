@@ -15,7 +15,7 @@ Record known validation failures that are not caused by the current task, so age
 
 | ID | Date | Command | Failure Summary | Scope | Owner | Blocks Current Task? | Unblock Condition | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| VD-001 | 2026-06-15 | Kubernetes exec from logging deployment running a Node DocsRAG retrieval request | DocsRAG retrieval returned HTTP 500 with a sanitized error envelope during logging Auth validation work. | external service | [UNKNOWN: DocsRAG owner] | no | DocsRAG service returns HTTP 200 for logging pod context retrieval using the pod JWT token. | Safe result: status 500, ok false, response keys statusCode and message. |
+| VD-001 | 2026-06-15 | Kubernetes exec from logging deployment running a Node DocsRAG retrieval request | DocsRAG retrieval returned HTTP 500 with a sanitized error envelope during logging Auth validation work. | external service | docs-rag-microservice maintainers (owner not formally assigned) | no | DocsRAG service returns HTTP 200 for logging pod context retrieval using the pod JWT token. | Safe result: status 500, ok false, response keys statusCode and message. |
 
 ## Current-Task Decision Checklist
 
@@ -24,6 +24,12 @@ Record known validation failures that are not caused by the current task, so age
 - Is the failure already listed above with `Blocks Current Task? = no`?
 - Did the failure exist before this task started?
 - Is the validation command required by the current task acceptance criteria?
+
+## Update Format
+
+Add new rows to the Entries table with ID, date, command, failure summary, scope,
+owner, whether it blocks the current task, unblock condition, and sanitized
+evidence. Never edit or remove a prior entry; append corrections as new rows.
 
 ## Agent Reporting Format
 

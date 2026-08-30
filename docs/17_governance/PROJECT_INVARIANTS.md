@@ -2,7 +2,7 @@
 
 ```yaml
 id: PROJECT-INVARIANTS
-status: draft
+status: reviewed
 owner: Engineering
 created: 2026-06-13
 last_updated: 2026-06-13

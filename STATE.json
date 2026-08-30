@@ -1,33 +1,17 @@
 {
-  "schema_version": "1.0",
-  "repository": "logging-microservice",
-  "service": {
-    "name": "logging-microservice",
-    "kind": "service",
-    "lifecycle": "active",
-    "deployment": "kubernetes"
+  "schemaVersion": 1,
+  "project": "logging-microservice",
+  "lifecycle": "active",
+  "health": "healthy",
+  "activeTask": "TASK-LOG-005",
+  "lastUpdated": "2026-08-30",
+  "deployment": {
+    "status": "deployed",
+    "environment": "production",
+    "url": "https://logging.alfares.cz"
   },
-  "planning": {
-    "status": "active",
-    "active_goal_ids": [],
-    "next_ready_goal_ids": [
-      "TASK-LOG-005"
-    ],
-    "blocked_goal_ids": [
-      "TASK-002"
-    ],
-    "active_workstream_ids": [],
-    "last_updated_at": "2026-08-30T18:49:06Z"
-  },
-  "delivery": {
-    "last_validation_id": "VAL-PLANNING-STANDARDIZATION-PHASE1",
-    "last_validation_status": "passed",
-    "validation_debt_count": 1,
-    "last_deployment_commit": null
-  },
-  "collection": {
-    "profile": "ips-full",
-    "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
-    "status_source": "human-and-agent-maintained"
-  }
+  "blockers": [],
+  "followUps": [
+    "Close TASK-LOG-005: issue ingest credentials to the 12 currently-locked-out services."
+  ]
 }

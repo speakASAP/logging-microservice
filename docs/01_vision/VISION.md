@@ -58,3 +58,9 @@ Callers need a stable logging API that records service name, log level, message,
 ## Product Philosophy
 
 Prefer stable contracts, operational clarity, and safe failure behavior over broad logging features. Callers should use short logging timeouts and local fallback behavior so this dependency never blocks their core request flow.
+
+## Approval
+
+Status: approved
+Approved by: project owner
+Approval evidence: owner-confirmation: logging-microservice-onboarding-approved
