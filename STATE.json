@@ -40,5 +40,6 @@
   "blockers": [],
   "followUps": [
     "Complete TASK-LOG-005 ingest-credential work tracked in TASKS.md."
-  ]
+  ],
+  "status": "active"
 }
