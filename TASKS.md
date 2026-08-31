@@ -1,15 +1,12 @@
 # Tasks: logging-microservice
 
 ## Active
-
 None. See Ready Next.
 
 ## Ready Next
-
 - TASK-LOG-005 (see Backlog below).
 
 ## Blocked
-
 No tasks are currently blocked.
 
 ## Backlog
