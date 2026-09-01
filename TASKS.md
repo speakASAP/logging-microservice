@@ -5,6 +5,7 @@ None. See Ready Next.
 
 ## Ready Next
 - TASK-LOG-005 (see Backlog below).
+- Complete TASK-LOG-005 ingest-credential work tracked in TASKS.md.
 
 ## Blocked
 No tasks are currently blocked.

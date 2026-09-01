@@ -27,18 +27,5 @@
     "profile": "ips-full",
     "artifact_index": "docs/registry/ARTIFACT_INDEX.json",
     "status_source": "wave-1-contract-remediation"
-  },
-  "schemaVersion": 1,
-  "project": "logging-microservice",
-  "lifecycle": "active",
-  "health": "healthy",
-  "activeTask": "TASK-LOG-005 (unrelated ingest-credential work) remains open and tracked separately in TASKS.md.",
-  "lastUpdated": "2026-08-30T00:00:00Z",
-  "deployment": {
-    "status": "kubernetes"
-  },
-  "blockers": [],
-  "followUps": [
-    "Complete TASK-LOG-005 ingest-credential work tracked in TASKS.md."
-  ]
+  }
 }
