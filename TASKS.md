@@ -1,26 +1,25 @@
+
+
 # Tasks: logging-microservice
 
 ## Active
+
 None. See Ready Next.
 
-## Ready Next
+
+## Ready next
+
 - TASK-LOG-005 (see Backlog below).
 - Complete TASK-LOG-005 ingest-credential work tracked in TASKS.md.
 
+
 ## Blocked
+
 No tasks are currently blocked.
 
-## Backlog
-
-- [ ] **TASK-LOG-005**: issue ingest credentials to the 12 services locked out since 2026-07-06
-      (`auth-microservice`, `docs-rag-microservice`, `monitoring-microservice`,
-      `notifications-microservice`, `orders-microservice`, `suppliers-microservice`, `runlayer`,
-      `flipflop-order-service`, `flipflop-product-service`) and diagnose `api-gateway`,
-      `minio-microservice`, `marketing-microservice` separately. Verify each returns 201.
-      This is the actual fix for the TASK-LOG-004 coverage gap.
-- [x] Verify log rotation is working correctly in production (priority: 3) (2026-06-19)
 
 ## Completed
+
 <!-- AI appends here. Never modifies previous entries. -->
 - [x] TASK-LOG-004 decision + coverage/staleness instrumentation (2026-08-17). Enumerated ingest
       coverage against the live pod: 17 senders shipping, 12 silent, ~28 app-tier never shipped.
@@ -35,11 +34,27 @@ No tasks are currently blocked.
 - [x] Verified and fixed production per-service log rotation on 2026-06-19; `rotation-check.log` and `rotation-check.human.log` archived to dated files after a live 105 MB rollover probe, deploy image `localhost:5000/logging-microservice:927853c`, rollout and health check passed.
 - [x] Deployed Auth role enforcement for logging admin read endpoints to production on 2026-06-13. Image `localhost:5000/logging-microservice:4769c51`; rollout and health check passed.
 
+
 ## Handoff
+
 
 Current owner: engineering. Next concrete action: issue ingest credentials for TASK-LOG-005 and verify 201 responses from the 12 previously-locked-out services.
 
+
+## Backlog
+
+
+- [ ] **TASK-LOG-005**: issue ingest credentials to the 12 services locked out since 2026-07-06
+      (`auth-microservice`, `docs-rag-microservice`, `monitoring-microservice`,
+      `notifications-microservice`, `orders-microservice`, `suppliers-microservice`, `runlayer`,
+      `flipflop-order-service`, `flipflop-product-service`) and diagnose `api-gateway`,
+      `minio-microservice`, `marketing-microservice` separately. Verify each returns 201.
+      This is the actual fix for the TASK-LOG-004 coverage gap.
+- [x] Verify log rotation is working correctly in production (priority: 3) (2026-06-19)
+
+
 ## Project Completion Marker
+
 
 - 2026-06-21: Project marked completed/frozen after remote inventory. There are no active goals, active plans, open tasks, blockers, or pending human/AI actions. Do not ask for a new goal during routine status checks unless the owner explicitly creates one.
 - **2026-08-17: UNFROZEN by owner request.** TASK-LOG-004 (ecosystem `TASKS.md`) surfaced a live
