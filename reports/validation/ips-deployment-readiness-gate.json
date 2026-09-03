@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-06-13T18:40:36Z",
+  "created_at": "2026-09-03T12:41:28Z",
   "gate": "deployment_readiness",
-  "next_step": "ready_for_deployment_review",
+  "next_step": "fix_deployment_readiness_findings",
   "pre_coding_gate": {
     "report_path": "reports/validation/ips-pre-coding-gate.json",
     "status": "pass"
@@ -13,22 +13,958 @@
   },
   "root": "/home/ssf/Documents/Github/logging-microservice",
   "schema_version": "1.0.0",
-  "status": "pass",
+  "status": "fail",
   "strict_doc_audit": {
-    "findings_count": 0,
-    "score": 100,
-    "status": "PASS"
+    "findings_count": 127,
+    "score": 0,
+    "status": "FAIL"
   },
-  "target": "TASK-001",
-  "unresolved_markers": [],
+  "target": null,
+  "unresolved_markers": [
+    {
+      "line": 96,
+      "marker": "[MISSING: ...]",
+      "path": ".github/skills/register-new-app/SKILL.md"
+    },
+    {
+      "line": 127,
+      "marker": "[MISSING: ...]",
+      "path": ".github/skills/register-new-app/SKILL.md"
+    },
+    {
+      "line": 127,
+      "marker": "[UNKNOWN: ...]",
+      "path": ".github/skills/register-new-app/SKILL.md"
+    },
+    {
+      "line": 92,
+      "marker": "[MISSING: ...]",
+      "path": "AGENTS.md"
+    },
+    {
+      "line": 92,
+      "marker": "[UNKNOWN: ...]",
+      "path": "AGENTS.md"
+    },
+    {
+      "line": 60,
+      "marker": "[MISSING: ...]",
+      "path": "AGENT_OPERATIONS.md"
+    },
+    {
+      "line": 60,
+      "marker": "[UNKNOWN: ...]",
+      "path": "AGENT_OPERATIONS.md"
+    },
+    {
+      "line": 64,
+      "marker": "[MISSING: ...]",
+      "path": "AGENT_OPERATIONS.md"
+    },
+    {
+      "line": 69,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 70,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 71,
+      "marker": "[MISSING: focused endpoint test harness/config for this endpoint]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 86,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 87,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 88,
+      "marker": "[MISSING: focused endpoint test harness/config for auth success, forbidden, unauthenticated, and response shape]",
+      "path": "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 38,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/13_context_packages/CP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 39,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/13_context_packages/CP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 24,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 25,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/14_prompts/PROMPT-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 116,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 117,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 118,
+      "marker": "[MISSING: frontend gateway/base URL for browser entitlement calls]",
+      "path": "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 183,
+      "marker": "[MISSING: tenant_id source]",
+      "path": "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md"
+    },
+    {
+      "line": 42,
+      "marker": "[MISSING: current logging ingestion endpoint for BPCP events]",
+      "path": "docs/business-process-control-plane/HOLIDAY_DISCOUNT_ADOPTION.md"
+    },
+    {
+      "line": 5,
+      "marker": "[MISSING: backend contract owner]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 16,
+      "marker": "[UNKNOWN: no ADR references present in local checkout]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 64,
+      "marker": "[MISSING: implemented customer API key endpoints]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 65,
+      "marker": "[MISSING: implemented customer hook-management endpoints]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 66,
+      "marker": "[MISSING: implemented AI log-pattern analysis endpoints]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 67,
+      "marker": "[MISSING: implemented notification alert-policy endpoints]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 68,
+      "marker": "[MISSING: implemented logging billing/trial endpoints]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 69,
+      "marker": "[MISSING: OpenAPI, Swagger, generated client, or machine-readable schema for these draft contracts]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 80,
+      "marker": "[MISSING: logging billing/trial contract]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 84,
+      "marker": "[MISSING: implemented logging alert-policy endpoint]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 84,
+      "marker": "[MISSING: alert-policy auth contract]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 84,
+      "marker": "[MISSING: alert-policy response shape]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 84,
+      "marker": "[MISSING: alert-policy pagination/filtering behavior]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 145,
+      "marker": "[MISSING: future API client]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 145,
+      "marker": "[MISSING: contract validation evidence]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 231,
+      "marker": "[MISSING: future API client]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 231,
+      "marker": "[MISSING: contract validation evidence]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 310,
+      "marker": "[MISSING: endpoint to rotate hook signing secret]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 321,
+      "marker": "[MISSING: future API client]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 321,
+      "marker": "[MISSING: contract validation evidence]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 409,
+      "marker": "[MISSING: future API client]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 409,
+      "marker": "[MISSING: contract validation evidence]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 542,
+      "marker": "[MISSING: authoritative backend contract evidence source]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 552,
+      "marker": "[MISSING: backend owner approval for API key lifecycle semantics]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 553,
+      "marker": "[MISSING: backend owner approval for hook delivery retry and signing-secret rotation semantics]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 554,
+      "marker": "[MISSING: AI service owner approval for analysis profiles, confidence scores, and raw-log redaction behavior]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 555,
+      "marker": "[MISSING: notification service owner approval for alert policy matching, throttling, and channel provider support]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 556,
+      "marker": "[MISSING: logging billing/trial owner and entitlement route contract]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 620,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 621,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 622,
+      "marker": "[MISSING: runtime implementation and tests]",
+      "path": "docs/intent/backend-contracts.md"
+    },
+    {
+      "line": 31,
+      "marker": "[MISSING: implemented billing/trial contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 35,
+      "marker": "[MISSING: implemented logging alert-policy endpoint]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 35,
+      "marker": "[MISSING: alert-policy auth contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 35,
+      "marker": "[MISSING: alert-policy response shape]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 35,
+      "marker": "[MISSING: alert-policy pagination/filtering behavior]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 47,
+      "marker": "[MISSING: no OpenAPI or generated client discovered]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 309,
+      "marker": "[MISSING: OpenAPI or generated client reference]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 334,
+      "marker": "[MISSING: logging API-key lifecycle contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 335,
+      "marker": "[MISSING: logging hook lifecycle contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 336,
+      "marker": "[MISSING: logging billing/trial entitlement contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 337,
+      "marker": "[MISSING: logging alert-policy contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 338,
+      "marker": "[MISSING: logging AI pattern-analysis contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 339,
+      "marker": "[MISSING: general redaction/sensitive-field contract]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 362,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 363,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/intent/contracts-integration-assumptions.md"
+    },
+    {
+      "line": 88,
+      "marker": "[MISSING: logging API-key lifecycle owner]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 89,
+      "marker": "[MISSING: logging billing/trial entitlement owner]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 90,
+      "marker": "[MISSING: logging AI-analysis owner approval]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 93,
+      "marker": "[MISSING: ...]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 115,
+      "marker": "[UNKNOWN: approved security reviewer and exception process]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 117,
+      "marker": "[UNKNOWN: ...]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 229,
+      "marker": "[MISSING: ...]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 229,
+      "marker": "[UNKNOWN: ...]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 233,
+      "marker": "[MISSING: no local IPS gate scripts found in this checkout]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 234,
+      "marker": "[MISSING: no local IPS gate scripts found in this checkout]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 235,
+      "marker": "[MISSING: deployment process and gate owner unknown]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 236,
+      "marker": "[UNKNOWN: required reviewer or approval process]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 256,
+      "marker": "[MISSING: source of payment-to-plan activation events]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 256,
+      "marker": "[MISSING: persistence model for plan, trial, and usage counters]",
+      "path": "docs/intent/execution-plan.md"
+    },
+    {
+      "line": 8,
+      "marker": "[UNKNOWN: repository contains no application files or existing intent docs in this checkout]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 9,
+      "marker": "[UNKNOWN: not available in local workspace]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 28,
+      "marker": "[UNKNOWN: Vision]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 31,
+      "marker": "[UNKNOWN: bounded implementation tasks]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 46,
+      "marker": "[UNKNOWN: approved upstream vision or product brief]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 48,
+      "marker": "[UNKNOWN: production deployment path and release gate owner]",
+      "path": "docs/intent/goal-impact.md"
+    },
+    {
+      "line": 39,
+      "marker": "[UNKNOWN: authoritative sensitive-field list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 151,
+      "marker": "[MISSING: ...]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 151,
+      "marker": "[UNKNOWN: ...]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 156,
+      "marker": "[UNKNOWN: authoritative sensitive-field list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 157,
+      "marker": "[UNKNOWN: whether export/download/copy actions are permitted]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 158,
+      "marker": "[UNKNOWN: whether session replay or analytics is enabled in the frontend]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 159,
+      "marker": "[UNKNOWN: retention policy for viewed or cached log data]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 160,
+      "marker": "[UNKNOWN: role-based visibility rules for sensitive log fields]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 161,
+      "marker": "[UNKNOWN: backend redaction contract and redaction metadata format]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 164,
+      "marker": "[UNKNOWN: approved security reviewer and exception process]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 175,
+      "marker": "[UNKNOWN: security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 175,
+      "marker": "[MISSING: authoritative field classification contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 176,
+      "marker": "[UNKNOWN: product owner for detail scope]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 176,
+      "marker": "[MISSING: backend redaction metadata]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 177,
+      "marker": "[UNKNOWN: security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 177,
+      "marker": "[MISSING: approved masking pattern list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 178,
+      "marker": "[UNKNOWN: export/copy approver]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 178,
+      "marker": "[MISSING: audit event contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 179,
+      "marker": "[UNKNOWN: data governance owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 179,
+      "marker": "[MISSING: export endpoint and retention contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 180,
+      "marker": "[UNKNOWN: release evidence reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 181,
+      "marker": "[UNKNOWN: frontend security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 181,
+      "marker": "[MISSING: approved storage policy]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 182,
+      "marker": "[UNKNOWN: telemetry owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 182,
+      "marker": "[MISSING: telemetry vendor/config review]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 183,
+      "marker": "[UNKNOWN: AI/security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 183,
+      "marker": "[MISSING: AI-analysis endpoint, permission, redaction, and retention contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 184,
+      "marker": "[UNKNOWN: fixture review owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 223,
+      "marker": "[UNKNOWN: field visibility owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 225,
+      "marker": "[UNKNOWN: whether copy is permitted]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 226,
+      "marker": "[MISSING: audit event contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 226,
+      "marker": "[MISSING: approved field list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 227,
+      "marker": "[MISSING: export endpoint]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 228,
+      "marker": "[MISSING: server-side redacted export contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 228,
+      "marker": "[UNKNOWN: retention policy]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 229,
+      "marker": "[UNKNOWN: data governance owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 232,
+      "marker": "[UNKNOWN: telemetry vendor/config]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 233,
+      "marker": "[UNKNOWN: whether analytics or session replay is enabled]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 235,
+      "marker": "[MISSING: AI-analysis endpoint]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 236,
+      "marker": "[MISSING: model input/output redaction contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 237,
+      "marker": "[UNKNOWN: AI/security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 243,
+      "marker": "[MISSING: authoritative sensitive-field list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 244,
+      "marker": "[MISSING: backend response redaction contract and redaction metadata format]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 245,
+      "marker": "[UNKNOWN: role and tenant visibility owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 246,
+      "marker": "[UNKNOWN: approved security reviewer and exception process]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 250,
+      "marker": "[UNKNOWN: whether copy actions are permitted]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 251,
+      "marker": "[MISSING: copy-safe field allow-list]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 252,
+      "marker": "[MISSING: audit event contract for copy actions]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 253,
+      "marker": "[UNKNOWN: product owner for copy workflows]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 257,
+      "marker": "[MISSING: server-generated export endpoint]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 258,
+      "marker": "[MISSING: export-safe field allow-list and redaction guarantees]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 259,
+      "marker": "[MISSING: export audit event contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 260,
+      "marker": "[UNKNOWN: retention policy for exported files]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 261,
+      "marker": "[UNKNOWN: data governance owner]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 266,
+      "marker": "[UNKNOWN: release evidence reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 267,
+      "marker": "[MISSING: validation artifact synthetic-data attestation process]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 268,
+      "marker": "[UNKNOWN: screenshot storage and retention policy]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 272,
+      "marker": "[MISSING: server-authorized AI-analysis endpoint]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 273,
+      "marker": "[MISSING: AI-analysis permission contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 274,
+      "marker": "[MISSING: model input/output redaction contract]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 275,
+      "marker": "[MISSING: AI prompt, response, telemetry, and retention policy]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 276,
+      "marker": "[UNKNOWN: AI/security reviewer]",
+      "path": "docs/intent/sensitive-data-notes.md"
+    },
+    {
+      "line": 7,
+      "marker": "[UNKNOWN: approved upstream vision or product brief is not present in this checkout]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 47,
+      "marker": "[UNKNOWN: exact production customer-dashboard role names and auth claim shape; derive from auth microservice contract]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 48,
+      "marker": "[UNKNOWN: whether customer dashboard and admin access use independent permissions or inherited role bundles]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 49,
+      "marker": "[MISSING: approved permission model owner]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 59,
+      "marker": "[MISSING: approved pricing source]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 137,
+      "marker": "[MISSING: backend sort contract]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 146,
+      "marker": "[UNKNOWN: product decision pending]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 162,
+      "marker": "[MISSING: ...]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 162,
+      "marker": "[UNKNOWN: ...]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 166,
+      "marker": "[MISSING: authoritative sensitive-field list]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 166,
+      "marker": "[MISSING: backend redaction contract]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 167,
+      "marker": "[MISSING: approved masking pattern list]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 168,
+      "marker": "[UNKNOWN: whether copy actions are permitted]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 168,
+      "marker": "[MISSING: audit event contract]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 169,
+      "marker": "[MISSING: export endpoint]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 169,
+      "marker": "[UNKNOWN: data governance owner]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 171,
+      "marker": "[UNKNOWN: telemetry vendor/config]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 171,
+      "marker": "[MISSING: redaction configuration review]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 172,
+      "marker": "[MISSING: AI-analysis endpoint]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 172,
+      "marker": "[UNKNOWN: AI/security reviewer]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 173,
+      "marker": "[UNKNOWN: outside T2 allowed-file scope]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 182,
+      "marker": "[MISSING: fixture inventory]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 183,
+      "marker": "[UNKNOWN: telemetry implementation]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 185,
+      "marker": "[MISSING: AI-analysis endpoint]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 229,
+      "marker": "[UNKNOWN: integration owner for merging G1, G2, G3, G4, G5, and G6 outputs]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 233,
+      "marker": "[UNKNOWN: release validation owner and deployment-readiness approver]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 239,
+      "marker": "[MISSING: no package manifest or test runner exists in this new static checkout]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 240,
+      "marker": "[MISSING: no package manifest or build tool exists in this new static checkout]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 242,
+      "marker": "[UNKNOWN: required deployment readiness evidence]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 247,
+      "marker": "[MISSING: ...]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 247,
+      "marker": "[UNKNOWN: ...]",
+      "path": "docs/intent/validation-criteria.md"
+    },
+    {
+      "line": 108,
+      "marker": "[MISSING: no package manifest or test runner exists in this checkout]",
+      "path": "docs/validation/frontend-validation.md"
+    },
+    {
+      "line": 109,
+      "marker": "[MISSING: no package manifest, build tool, lint command, or typechecker exists in this checkout]",
+      "path": "docs/validation/frontend-validation.md"
+    },
+    {
+      "line": 110,
+      "marker": "[MISSING: approved bearer token for validation run; implemented admin log query/services contracts are documented, but no live token was supplied]",
+      "path": "docs/validation/frontend-validation.md"
+    },
+    {
+      "line": 111,
+      "marker": "[MISSING: authoritative sensitive-field list and export/copy approval rules]",
+      "path": "docs/validation/frontend-validation.md"
+    },
+    {
+      "line": 112,
+      "marker": "[UNKNOWN: deployment process and release gate owner]",
+      "path": "docs/validation/frontend-validation.md"
+    }
+  ],
   "validation_reports": {
-    "matching_reports": [
-      "docs/12_validation/VAL-TASK-001-ips-baseline.md"
-    ],
     "reports": [
-      "docs/12_validation/VAL-TASK-001-ips-baseline.md"
+      "docs/12_validation/VAL-PLANNING-STANDARDIZATION-PHASE1.md",
+      "docs/12_validation/VAL-TASK-001-bootstrap-service.md",
+      "docs/12_validation/VAL-TASK-001-ips-baseline.md",
+      "docs/12_validation/VAL-TASK-002-logging-entitlement-contract.md"
     ],
     "status": "pass",
-    "target": "TASK-001"
+    "target": null
   }
 }

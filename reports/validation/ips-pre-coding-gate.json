@@ -1,9 +1,11 @@
 {
-  "created_at": "2026-06-13T18:40:36Z",
+  "created_at": "2026-09-03T12:41:28Z",
   "execution_plans": {
-    "execution_plan_count": 1,
+    "execution_plan_count": 3,
     "execution_plan_files": [
-      "docs/21_execution_plans/EP-TASK-001.md"
+      "docs/21_execution_plans/EP-TASK-001-bootstrap-service.md",
+      "docs/21_execution_plans/EP-TASK-001.md",
+      "docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md"
     ],
     "missing_validation_plan": []
   },
@@ -29,9 +31,11 @@
   "status": "pass",
   "tasks": {
     "missing_upstream_traceability": [],
-    "task_count": 1,
+    "task_count": 3,
     "task_files": [
-      "docs/11_tasks/TASK-001-implement-ips-baseline.md"
+      "docs/11_tasks/TASK-001-bootstrap-service.md",
+      "docs/11_tasks/TASK-001-implement-ips-baseline.md",
+      "docs/11_tasks/TASK-002-logging-entitlement-contract.md"
     ]
   }
 }
