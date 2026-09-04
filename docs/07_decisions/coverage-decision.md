@@ -133,7 +133,8 @@ Probing each pod directly (POST with its own credential) showed the causes diffe
 - [x] Fix the shared logger in `auth-microservice` + `notifications-microservice`.
 - [ ] Patch or retire the 5 unpatched vendored logger copies (`allegro`, `aukro`, `bazos`,
       `flipflop`, `heureka`) — all deprioritized services, so low urgency.
-- [ ] `kube-state-metrics` posts to ingest and is rejected; it is infra and should either be
-      given a credential or stopped from posting.
+- [x] `kube-state-metrics` posted to ingest and was rejected. Moot since 2026-08-27: the
+      observability stack was retired and the pod no longer exists, so nothing posts. No
+      credential was granted; the decision to treat infra as out of scope stands.
 - [ ] Diagnose `api-gateway` and `marketing-microservice` (stopped 08-13/08-14, outside the
       07-06 cluster).
