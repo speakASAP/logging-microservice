@@ -35,7 +35,10 @@ within hours instead of weeks.
 
 Eleven stopped on **exactly 2026-07-06** — one event, not twelve regressions.
 
-`LOG_INGEST_REQUIRE_AUTH=true`, `LOG_INGEST_BEARER_TOKENS` holds one token. Verified in-pod:
+Ingest auth is enforced and each sender must present its own Auth-issued credential for the
+`sender -> logging-microservice` pair, per
+[`auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+A credential shared by senders is prohibited. Verified in-pod:
 
 ```
 POST /api/logs  (no credential)     -> 401
@@ -93,7 +96,7 @@ The real defect is in the **vendored shared logger** (`shared/logger/logger.serv
 9 copies across repos). It:
 
 1. Read only `LOGGING_SERVICE_URL` and **never sent an Authorization header**, so it could
-   never satisfy ingest auth once `LOG_INGEST_REQUIRE_AUTH=true` landed on 2026-07-06.
+   never satisfy ingest auth once it was enforced on 2026-07-06. Each sender needs its own credential.
 2. Swallowed the resulting 401 — `// Silently fail`, logging only when
    `NODE_ENV === 'development'`. That is why nine services went dark for six weeks with
    nothing in any log.
