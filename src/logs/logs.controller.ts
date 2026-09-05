@@ -5,7 +5,7 @@
 import { Controller, Post, Get, Body, Query, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
 import { LogsService } from './logs.service';
 import { LogEntryDto } from './dto/log-entry.dto';
-import { AdminRoleGuard, LogReadRoleGuard } from '../auth/admin-role.guard';
+import { LogQueryRoleGuard, LogReadRoleGuard } from '../auth/admin-role.guard';
 import { LogIngestGuard } from '../auth/log-ingest.guard';
 
 @Controller('api/logs')
@@ -60,7 +60,7 @@ export class LogsController {
   }
 
   @Get('query')
-  @UseGuards(AdminRoleGuard)
+  @UseGuards(LogQueryRoleGuard)
   async queryLogs(
     @Query('service') service?: string,
     @Query('level') level?: string,
@@ -107,7 +107,7 @@ export class LogsController {
    * a degraded pipeline must not report 200.
    */
   @Get('coverage')
-  @UseGuards(AdminRoleGuard)
+  @UseGuards(LogReadRoleGuard)
   async getCoverage() {
     let report: Awaited<ReturnType<LogsService['getCoverage']>>;
     try {
@@ -138,7 +138,7 @@ export class LogsController {
   }
 
   @Get('services')
-  @UseGuards(AdminRoleGuard)
+  @UseGuards(LogReadRoleGuard)
   async getServices() {
     try {
       const services = await this.logsService.getServices();

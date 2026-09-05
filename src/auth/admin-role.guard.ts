@@ -102,3 +102,79 @@ export class AdminRoleGuard implements CanActivate {
 export class LogReadRoleGuard extends AdminRoleGuard {
   protected readonly allowedRoles: ReadonlySet<string> = READ_ONLY_ROLES;
 }
+
+/** Levels a read-only principal may query. */
+const READ_ONLY_LEVELS = new Set(['error', 'warn', 'fatal']);
+
+/** Largest page a read-only principal may pull in one request. */
+const READ_ONLY_MAX_LIMIT = 200;
+
+/**
+ * Guard for `/logs/query`, the one read endpoint that returns raw log bodies.
+ *
+ * Monitoring needs this endpoint to see which services are erroring, and it
+ * holds `internal:logging-microservice:readonly`. The obvious move is to let
+ * that role through LogReadRoleGuard and stop there -- but every other endpoint
+ * on that guard returns aggregates, while this one returns log *contents*, with
+ * free-text search across them. Log bodies routinely carry tokens, e-mail
+ * addresses and request payloads, so granting a summary-scoped principal
+ * unrestricted full-text search over all logs would quietly turn a read-only
+ * role into ecosystem-wide data access.
+ *
+ * So the role is admitted and then scoped. An admin principal is unaffected.
+ * A read-only principal may ask the question monitoring actually needs -- "what
+ * is failing" -- and not "show me everything you have":
+ *
+ *   - only error-ish levels, never a full log dump
+ *   - no free-text `q`, which is the exfiltration primitive here
+ *   - a bounded page size
+ *
+ * Enforced in the guard rather than the handler so that a future endpoint or a
+ * refactor cannot accidentally route around it.
+ */
+@Injectable()
+export class LogQueryRoleGuard extends AdminRoleGuard {
+  protected readonly allowedRoles: ReadonlySet<string> = READ_ONLY_ROLES;
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const allowed = await super.canActivate(context);
+    if (!allowed) {
+      return false;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const roles = Array.isArray(request.user?.roles) ? request.user.roles : [];
+    const isAdmin = roles.some(
+      (role: unknown) => typeof role === 'string' && REQUIRED_ADMIN_ROLES.has(role),
+    );
+    if (isAdmin) {
+      return true;
+    }
+
+    const query = request.query ?? {};
+
+    if (query.q !== undefined && String(query.q).length > 0) {
+      throw new ForbiddenException(
+        'Free-text log search requires a logging admin role',
+      );
+    }
+
+    const level = String(query.level ?? '').toLowerCase();
+    if (!READ_ONLY_LEVELS.has(level)) {
+      throw new ForbiddenException(
+        `Read-only log queries must request one of: ${[...READ_ONLY_LEVELS].join(', ')}`,
+      );
+    }
+
+    // Capped rather than rejected: a caller asking for too much still gets a
+    // useful answer, and an alerting path should not fail closed over a page
+    // size when it is trying to report that something else is broken.
+    const limit = Number(query.limit);
+    if (!Number.isFinite(limit) || limit > READ_ONLY_MAX_LIMIT || limit <= 0) {
+      query.limit = String(READ_ONLY_MAX_LIMIT);
+      request.query = query;
+    }
+
+    return true;
+  }
+}
