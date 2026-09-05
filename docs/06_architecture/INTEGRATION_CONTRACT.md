@@ -34,7 +34,7 @@ the human-readable architecture and contract links.
 
 ## Authentication and authorization
 
-`POST /api/logs` is unauthenticated (any in-cluster caller may write a log entry; callers are trusted ecosystem services). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
+Machine callers of `POST /api/logs` follow the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
 
 ## Synchronous dependencies
 

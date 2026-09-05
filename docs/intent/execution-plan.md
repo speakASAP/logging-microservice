@@ -1,3 +1,5 @@
+Service-to-service authentication follows the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+
 # Logging Frontend Execution Plan
 
 Status: ai-draft

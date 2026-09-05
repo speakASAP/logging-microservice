@@ -61,6 +61,8 @@ Deployed to the `statex-apps` namespace via the shared serialized deploy runner 
 
 All services **must** include `duration_ms` in metadata and log every timeout at `error` level.
 
+Service callers follow the [canonical service identity standard](../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+
 ### GET /api/logs/query
 
 Admin read endpoint. Requires `Authorization: Bearer <Auth access token>` with one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`.
