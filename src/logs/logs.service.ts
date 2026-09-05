@@ -3,6 +3,7 @@
  * Handles log ingestion, storage, and querying
  */
 
+import { ErrorIndex } from './error-index';
 import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as winston from 'winston';
@@ -170,7 +171,7 @@ export class LogsService {
   private readonly logRotationMaxBytes: number;
   private readonly logRotationMaxFiles: number;
 
-  constructor() {
+  constructor(private readonly errorIndex: ErrorIndex) {
     this.logStoragePath = process.env.LOG_STORAGE_PATH || './logs';
     this.logRotationMaxBytes = this.parseSizeToBytes(process.env.LOG_ROTATION_MAX_SIZE || '100m');
     this.logRotationMaxFiles = this.parseMaxFiles(process.env.LOG_ROTATION_MAX_FILES || '10');
@@ -378,6 +379,16 @@ export class LogsService {
         duration_ms: logEntry.duration_ms,
         metadata: logEntry.metadata || {},
       };
+
+      // Indexed before the write so an error is visible to alerting even if the
+      // file append below fails. The index is the fast path for "what is broken
+      // right now"; the files remain the durable record.
+      this.errorIndex.record({
+        level: logEntry.level,
+        message: resolvedMessage,
+        service: logEntry.service,
+        timestamp: logData.timestamp,
+      });
 
       this.logger.log(logEntry.level, resolvedMessage, {
         service: logEntry.service,

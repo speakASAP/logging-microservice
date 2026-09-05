@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { LogsService } from '../src/logs/logs.service';
 import { CustomerLogAccess } from '../src/auth/customer-log-read.guard';
+import { ErrorIndex } from '../src/logs/error-index';
 
 describe('LogsService customer log reads', () => {
   let tempDir: string;
@@ -17,7 +18,7 @@ describe('LogsService customer log reads', () => {
     process.env.LOG_STORAGE_PATH = tempDir;
     delete process.env.LOGGING_TENANT_PROJECT_MAP;
     delete process.env.LOGGING_TENANT_BUSINESS_MAP;
-    service = new LogsService();
+    service = new LogsService(new ErrorIndex());
   });
 
   afterEach(() => {

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { LogsService } from '../src/logs/logs.service';
+import { ErrorIndex } from '../src/logs/error-index';
 
 /**
  * Coverage + staleness detection (TASK-LOG-004).
@@ -31,7 +32,7 @@ describe('LogsService coverage + staleness', () => {
     process.env.LOG_STORAGE_PATH = tmpDir;
     delete process.env.LOG_EXPECTED_SERVICES;
     delete process.env.LOG_STALE_AFTER_HOURS;
-    service = new LogsService();
+    service = new LogsService(new ErrorIndex());
   });
 
   afterEach(() => {
@@ -75,11 +76,11 @@ describe('LogsService coverage + staleness', () => {
       writeServiceLog('runlayer', 2);
 
       process.env.LOG_STALE_AFTER_HOURS = '1';
-      expect((await new LogsService().getCoverage()).stale.map((s) => s.service))
+      expect((await new LogsService(new ErrorIndex()).getCoverage()).stale.map((s) => s.service))
         .toContain('runlayer');
 
       process.env.LOG_STALE_AFTER_HOURS = '999';
-      expect((await new LogsService().getCoverage()).stale.map((s) => s.service))
+      expect((await new LogsService(new ErrorIndex()).getCoverage()).stale.map((s) => s.service))
         .not.toContain('runlayer');
     });
 
@@ -87,7 +88,7 @@ describe('LogsService coverage + staleness', () => {
       writeServiceLog('payments-microservice', 0);
       process.env.LOG_EXPECTED_SERVICES = 'payments-microservice,orders-microservice';
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
 
       expect(coverage.missing).toContain('orders-microservice');
       expect(coverage.missing).not.toContain('payments-microservice');
@@ -99,7 +100,7 @@ describe('LogsService coverage + staleness', () => {
       process.env.LOG_EXPECTED_SERVICES =
         'payments-microservice,auth-microservice,orders-microservice';
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
 
       expect(coverage.summary.expected).toBe(3);
       expect(coverage.summary.shipping).toBe(1);
@@ -110,10 +111,10 @@ describe('LogsService coverage + staleness', () => {
     it('is healthy only when nothing is stale and nothing expected is missing', async () => {
       writeServiceLog('payments-microservice', 0);
       process.env.LOG_EXPECTED_SERVICES = 'payments-microservice';
-      expect((await new LogsService().getCoverage()).healthy).toBe(true);
+      expect((await new LogsService(new ErrorIndex()).getCoverage()).healthy).toBe(true);
 
       writeServiceLog('auth-microservice', 30);
-      expect((await new LogsService().getCoverage()).healthy).toBe(false);
+      expect((await new LogsService(new ErrorIndex()).getCoverage()).healthy).toBe(false);
     });
 
     it('does not count rotated, human-readable or aggregate files as senders', async () => {
@@ -122,7 +123,7 @@ describe('LogsService coverage + staleness', () => {
       fs.writeFileSync(path.join(tmpDir, 'payments-microservice.human.log'), 'x\n');
       writeServiceLog('payments-microservice', 0);
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
       const all = [...coverage.shipping, ...coverage.stale].map((s) => s.service);
 
       expect(all).toEqual(['payments-microservice']);
@@ -139,7 +140,7 @@ describe('LogsService coverage + staleness', () => {
       fs.utimesSync(dated, old, old);
       fs.writeFileSync(path.join(tmpDir, 'speakasap.human.2026-08-16.log'), 'x\n');
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
       const all = [...coverage.shipping, ...coverage.stale].map((s) => s.service);
 
       expect(all).toEqual(['marketing-microservice']);
@@ -157,7 +158,7 @@ describe('LogsService coverage + staleness', () => {
       stopped.forEach((s) => writeServiceLog(s, 42));
       writeServiceLog('speakasap', 0);
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
 
       expect(coverage.stale).toHaveLength(stopped.length);
       expect(coverage.healthy).toBe(false);
@@ -170,7 +171,7 @@ describe('LogsService coverage + staleness', () => {
       writeServiceLog('orders-microservice', 40);
       process.env.LOG_IGNORE_STALE_SERVICES = 'orders-microservice';
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
 
       expect(coverage.stale.map((s) => s.service)).not.toContain('orders-microservice');
       expect(coverage.ignored).toContain('orders-microservice');
@@ -181,14 +182,14 @@ describe('LogsService coverage + staleness', () => {
       writeServiceLog('orders-microservice', 40);
       process.env.LOG_IGNORE_STALE_SERVICES = 'orders-microservice';
 
-      const coverage = await new LogsService().getCoverage();
+      const coverage = await new LogsService(new ErrorIndex()).getCoverage();
 
       expect(coverage.idle.map((s) => s.service)).toContain('orders-microservice');
     });
 
     it('raises rather than silently returning empty when the log dir is unreadable', async () => {
       process.env.LOG_STORAGE_PATH = path.join(tmpDir, 'does-not-exist');
-      const missingDirService = new LogsService();
+      const missingDirService = new LogsService(new ErrorIndex());
       fs.rmSync(path.join(tmpDir, 'does-not-exist'), { recursive: true, force: true });
 
       await expect(missingDirService.getCoverage()).rejects.toThrow();

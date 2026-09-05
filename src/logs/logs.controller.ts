@@ -6,11 +6,14 @@ import { Controller, Post, Get, Body, Query, HttpException, HttpStatus, UseGuard
 import { LogsService } from './logs.service';
 import { LogEntryDto } from './dto/log-entry.dto';
 import { LogQueryRoleGuard, LogReadRoleGuard } from '../auth/admin-role.guard';
+import { ErrorIndex } from './error-index';
 import { LogIngestGuard } from '../auth/log-ingest.guard';
 
 @Controller('api/logs')
 export class LogsController {
-  constructor(private logsService: LogsService) {}
+  constructor(private logsService: LogsService,
+    private readonly errorIndex: ErrorIndex,
+  ) {}
 
   @Post()
   @UseGuards(LogIngestGuard)
@@ -57,6 +60,30 @@ export class LogsController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /**
+   * Recent errors, grouped, from the in-memory index.
+   *
+   * Exists because /logs/query cannot be polled. That endpoint reads 4 GB
+   * across 330 files with readFileSync on every call — roughly 37 seconds,
+   * blocking the event loop throughout. A watcher calling it on a schedule
+   * drives this container into liveness-probe failure and a SIGKILL restart,
+   * which takes ingestion down for the whole ecosystem. Observed, not
+   * theorised. This endpoint touches no files and answers from memory.
+   *
+   * On the read-only guard because it returns aggregates and a truncated
+   * sample line, not log bodies — the same reasoning that puts the marathon
+   * summary there.
+   */
+  @Get('error-summary')
+  @UseGuards(LogReadRoleGuard)
+  getErrorSummary(@Query('windowMinutes') windowMinutes?: string) {
+    const parsed = Number(windowMinutes);
+    return {
+      success: true,
+      data: this.errorIndex.summary(Number.isFinite(parsed) && parsed > 0 ? parsed : undefined),
+    };
   }
 
   @Get('query')
