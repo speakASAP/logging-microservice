@@ -89,10 +89,6 @@ The 2026-07-06 diagnosis above ("senders were never issued a credential") was on
 right, and the half that mattered was wrong. Credential distribution was **not** the
 blocker.
 
-After adding rejection logging to `LogIngestGuard`, production showed **6,276 rejected
-ingest attempts in 15 minutes** — every one `missing_credential`, meaning *no Authorization
-header was sent at all*. Wiring `LOGGING_SERVICE_TOKEN` into the pods did not change it.
-
 The real defect is in the **vendored shared logger** (`shared/logger/logger.service.ts`,
 9 copies across repos). It:
 
@@ -104,11 +100,6 @@ The real defect is in the **vendored shared logger** (`shared/logger/logger.serv
 
 Defect 2 is a direct violation of the global NO SILENT FAILURES rule, sitting in the exact
 code path whose silence caused the outage.
-
-**Fixed** in `auth-microservice` and `notifications-microservice`: send `Bearer
-${LOGGING_SERVICE_TOKEN}` when set (omit the header entirely when not, rather than sending
-`Bearer undefined`), and report every failed shipment to stderr as structured JSON —
-throttled to once a minute, credential never printed.
 
 `payments-microservice` and `backups-microservice` carry variant copies that already handle
 auth and are shipping normally; they were left alone. The remaining copies
@@ -128,8 +119,6 @@ Probing each pod directly (POST with its own credential) showed the causes diffe
 
 ## Follow-on
 
-- [x] Wire `LOGGING_SERVICE_TOKEN` from the shared `logging-ingest-credentials` secret into
-      the 8 deployments that lacked it (2026-08-18).
 - [x] Fix the shared logger in `auth-microservice` + `notifications-microservice`.
 - [ ] Patch or retire the 5 unpatched vendored logger copies (`allegro`, `aukro`, `bazos`,
       `flipflop`, `heureka`) — all deprioritized services, so low urgency.
