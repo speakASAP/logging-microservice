@@ -4,12 +4,13 @@
 
 ## Active
 
-None.
+None currently in progress. The ingest-credential hardening (TASK-LOG-005) shipped
+2026-09-04 and closed the last open lane; see Completed and Handoff below.
 
 
 ## Ready next
 
-No ready-next tasks.
+No ready-next tasks queued.
 
 
 ## Blocked
