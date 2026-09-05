@@ -15,7 +15,7 @@ No ready-next tasks queued.
 
 ## Blocked
 
-No tasks are currently blocked.
+- EP-TASK-002 logging entitlement contract (docs/21_execution_plans/EP-TASK-002-logging-entitlement-contract.md, status=implemented-v1, completeness_level=draft) carries unresolved `[MISSING: ...]` markers (payment-to-plan activation event source, plan/trial/usage counter persistence, frontend gateway/base URL, tenant_id source). STATE.json planning.status downgraded from done to blocked on 2026-09-05 pending owner input on these; see docs/PLANNING_STATUS_VOCABULARY.md.
 
 
 ## Completed
