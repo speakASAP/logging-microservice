@@ -36,9 +36,11 @@ the human-readable architecture and contract links.
 
 Machine callers of `POST /api/logs` must follow the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
 
-**Known non-conformance — the ingest route does not meet the standard today.** `LogIngestGuard` (`src/auth/log-ingest.guard.ts`) authenticates `POST /api/logs` against static credential sets in `LOG_INGEST_API_KEYS` (header `x-logging-api-key` or `x-api-key`) and `LOG_INGEST_BEARER_TOKENS`, with an `LOG_INGEST_SERVICE_ALLOWLIST` of caller names. It performs no RS256 verification and no `POST /auth/validate` call. Enforcement is also conditional on `LOG_INGEST_REQUIRE_AUTH=true`.
+`LogIngestGuard` (`src/auth/log-ingest.guard.ts`) validates the bearer through `POST /auth/validate` and requires `internal:logging-microservice:ingest` (or `:admin`). Roles come back resolved from Auth's database, so a revoked role stops working immediately rather than at `exp`. `global:superadmin` is deliberately not accepted: it is a human role, and a service token must never carry it.
 
-Shared static API keys and a self-asserted caller name are prohibited by the standard: they are not per-`(caller -> target)` pair, not Auth-issued, not revocable per caller, and carry no `internal:logging-microservice:<role>` claim. Do not read the first paragraph as a statement that ingest is already conformant — it states the target, and this note states the gap. Do not add new callers or routes to this guard; the fix is a migration to per-pair Auth-issued RS256 credentials.
+**Migration window — closing.** The static credential sets (`LOG_INGEST_API_KEYS` with `x-logging-api-key`/`x-api-key`, and `LOG_INGEST_BEARER_TOKENS`) are still accepted, because roughly twenty services ingest here and closing the path before each holds its own credential would take fleet-wide logging dark — removing the one signal needed to diagnose it. Every static acceptance emits a structured `log_ingest_static_credential_accepted` warning naming the sender; that line going quiet per sender is the exit condition. Set `LOG_INGEST_ALLOW_STATIC_CREDENTIALS=false` to close it.
+
+Do not add new senders to the static sets — a new sender needs a real `(caller -> logging-microservice)` Auth principal. Note also that enforcement as a whole is still conditional on `LOG_INGEST_REQUIRE_AUTH=true`.
 
 ## Synchronous dependencies
 
