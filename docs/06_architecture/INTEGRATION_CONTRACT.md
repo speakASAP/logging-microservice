@@ -34,7 +34,11 @@ the human-readable architecture and contract links.
 
 ## Authentication and authorization
 
-Machine callers of `POST /api/logs` follow the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
+Machine callers of `POST /api/logs` must follow the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
+
+**Known non-conformance — the ingest route does not meet the standard today.** `LogIngestGuard` (`src/auth/log-ingest.guard.ts`) authenticates `POST /api/logs` against static credential sets in `LOG_INGEST_API_KEYS` (header `x-logging-api-key` or `x-api-key`) and `LOG_INGEST_BEARER_TOKENS`, with an `LOG_INGEST_SERVICE_ALLOWLIST` of caller names. It performs no RS256 verification and no `POST /auth/validate` call. Enforcement is also conditional on `LOG_INGEST_REQUIRE_AUTH=true`.
+
+Shared static API keys and a self-asserted caller name are prohibited by the standard: they are not per-`(caller -> target)` pair, not Auth-issued, not revocable per caller, and carry no `internal:logging-microservice:<role>` claim. Do not read the first paragraph as a statement that ingest is already conformant — it states the target, and this note states the gap. Do not add new callers or routes to this guard; the fix is a migration to per-pair Auth-issued RS256 credentials.
 
 ## Synchronous dependencies
 

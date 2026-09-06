@@ -28,12 +28,20 @@ describe('LogIngestGuard rejection visibility', () => {
   afterEach(() => {
     errorSpy.mockRestore();
     process.env = { ...originalEnv };
+    jest.restoreAllMocks();
   });
 
-  it('logs an error naming the service when a credential is missing', () => {
+  beforeEach(() => {
+    // These cases cover the legacy static-credential path and its rejection
+    // logging, so auth is stubbed as "no valid principal" and the guard falls
+    // through to it. Unstubbed, the RS256 path would reach the network.
+    global.fetch = jest.fn(async () => ({ ok: false })) as never;
+  });
+
+  it('logs an error naming the service when a credential is missing', async () => {
     const guard = new LogIngestGuard();
 
-    expect(() => guard.canActivate(contextFor({ service: 'auth-microservice' }))).toThrow();
+    await expect(guard.canActivate(contextFor({ service: 'auth-microservice' }))).rejects.toThrow();
 
     expect(errorSpy).toHaveBeenCalled();
     const logged = errorSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
@@ -41,49 +49,49 @@ describe('LogIngestGuard rejection visibility', () => {
     expect(logged).toMatch(/reject/i);
   });
 
-  it('logs an error when a bearer token is presented but wrong', () => {
+  it('logs an error when a bearer token is presented but wrong', async () => {
     const guard = new LogIngestGuard();
 
-    expect(() =>
+    await expect(
       guard.canActivate(
         contextFor({ service: 'orders-microservice' }, { authorization: 'Bearer wrong-token' }),
       ),
-    ).toThrow();
+    ).rejects.toThrow();
 
     const logged = errorSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
     expect(logged).toContain('orders-microservice');
   });
 
-  it('never logs the presented credential value', () => {
+  it('never logs the presented credential value', async () => {
     const guard = new LogIngestGuard();
 
-    expect(() =>
+    await expect(
       guard.canActivate(
         contextFor({ service: 'x' }, { authorization: 'Bearer super-secret-value' }),
       ),
-    ).toThrow();
+    ).rejects.toThrow();
 
     const logged = errorSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
     expect(logged).not.toContain('super-secret-value');
     expect(logged).not.toContain('good-token');
   });
 
-  it('logs an error when a service is blocked by the allowlist', () => {
+  it('logs an error when a service is blocked by the allowlist', async () => {
     process.env.LOG_INGEST_SERVICE_ALLOWLIST = 'allowed-svc';
     const guard = new LogIngestGuard();
 
-    expect(() => guard.canActivate(contextFor({ service: 'blocked-svc' }))).toThrow();
+    await expect(guard.canActivate(contextFor({ service: 'blocked-svc' }))).rejects.toThrow();
 
     const logged = errorSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
     expect(logged).toContain('blocked-svc');
   });
 
-  it('stays silent when the credential is valid', () => {
+  it('stays silent when the credential is valid', async () => {
     const guard = new LogIngestGuard();
 
-    expect(
+    await expect(
       guard.canActivate(contextFor({ service: 'speakasap' }, { authorization: 'Bearer good-token' })),
-    ).toBe(true);
+    ).resolves.toBe(true);
 
     expect(errorSpy).not.toHaveBeenCalled();
   });
