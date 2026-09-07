@@ -32,12 +32,8 @@ spec:
           ports:
             - containerPort: 3367
               name: http
-          env:
-            - name: LOG_INGEST_BEARER_TOKENS
-              valueFrom:
-                secretKeyRef:
-                  name: logging-ingest-credentials
-                  key: LOG_INGEST_BEARER_TOKENS
+          # Ingest accepts Auth-issued RS256 only. Do not mount
+          # logging-ingest-credentials / LOG_INGEST_BEARER_TOKENS.
           envFrom:
             - configMapRef:
                 name: logging-microservice-config

@@ -11,7 +11,7 @@ the human-readable architecture and contract links.
 
 | Capability | Component | Decision | Contract/API/event | Configuration | Failure mode | Validation evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auth | `auth-microservice` | required | Bearer JWT verified against roles `global:superadmin`, `app:logging-microservice:admin`, `internal:logging-microservice:admin` | `AUTH_SERVICE_URL` ConfigMap value | Query/services admin endpoints return 401/403; ingestion (`POST /api/logs`) is unaffected | `curl` with/without a valid admin token against `/api/logs/query` |
+| Auth | `auth-microservice` | required | Bearer JWT: admin roles for query/services; `internal:logging-microservice:ingest` for `POST /api/logs` | `AUTH_SERVICE_URL` ConfigMap value | Query/services and ingest return 401/403 when Auth unavailable or role missing | Authenticated ingest call + query with/without admin token |
 | PostgreSQL | `db-server-postgres` | not-applicable | n/a | n/a | n/a | Log storage is file-based (Winston daily-rotate) on a Kubernetes PVC; no relational database is used |
 | Redis | `db-server-redis` | not-applicable | n/a | n/a | n/a | No caching or session layer is used by this service |
 | Logging | `logging-microservice` | required | Internal Winston structured write to `logs/*.log` | `LOG_STORAGE_PATH`, `LOG_ROTATION_MAX_SIZE`, `LOG_ROTATION_MAX_FILES` | Write failure returns 500; caller falls back to local console logging | Log rotation and ingestion verification (see `TASKS.md`) |
@@ -38,13 +38,11 @@ Machine callers of `POST /api/logs` must follow the [canonical service identity 
 
 `LogIngestGuard` (`src/auth/log-ingest.guard.ts`) validates the bearer through `POST /auth/validate` and requires `internal:logging-microservice:ingest` (or `:admin`). Roles come back resolved from Auth's database, so a revoked role stops working immediately rather than at `exp`. `global:superadmin` is deliberately not accepted: it is a human role, and a service token must never carry it.
 
-**Migration window — closing.** The static credential sets (`LOG_INGEST_API_KEYS` with `x-logging-api-key`/`x-api-key`, and `LOG_INGEST_BEARER_TOKENS`) are still accepted, because roughly twenty services ingest here and closing the path before each holds its own credential would take fleet-wide logging dark — removing the one signal needed to diagnose it. Every static acceptance emits a structured `log_ingest_static_credential_accepted` warning naming the sender; that line going quiet per sender is the exit condition. Set `LOG_INGEST_ALLOW_STATIC_CREDENTIALS=false` to close it.
-
-Do not add new senders to the static sets — a new sender needs a real `(caller -> logging-microservice)` Auth principal. Note also that enforcement as a whole is still conditional on `LOG_INGEST_REQUIRE_AUTH=true`.
+Static shared credential sets (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`) are removed. Every machine sender must present a per-pair Auth-issued RS256 principal minted with `auth-microservice/scripts/provision-service-token.js` and delivered Vault → ExternalSecret → Secret. Enforcement requires `LOG_INGEST_REQUIRE_AUTH=true`. Auth unreachable during validate fails closed.
 
 ## Synchronous dependencies
 
-- `auth-microservice` (`AUTH_SERVICE_URL`) — token/role verification for admin read endpoints only; ingestion does not depend on it.
+- `auth-microservice` (`AUTH_SERVICE_URL`) — token/role verification for admin read endpoints and for ingest (`POST /api/logs`) service principals.
 - `payments-microservice` (`PAYMENT_SERVICE_URL`) — payment webhook signature verification.
 - Callers use a 1–2 second timeout against this service per `README.md` best practices; this service does not itself call back into arbitrary caller services.
 
@@ -54,7 +52,7 @@ None. This service does not publish or consume RabbitMQ events.
 
 ## Degraded operation
 
-If `auth-microservice` is unavailable, admin query/service-listing endpoints fail closed (401/403); log ingestion continues unaffected since it does not require auth verification. If the PVC is full or unavailable, ingestion returns a `500` and callers are expected to fall back to local console/file logging per the documented client best practices.
+If `auth-microservice` is unavailable, admin query/service-listing endpoints and log ingest both fail closed (401/403). If the PVC is full or unavailable, ingestion returns a `500` and callers are expected to fall back to local console/file logging per the documented client best practices.
 
 ## Validation
 

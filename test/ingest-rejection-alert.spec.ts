@@ -20,22 +20,16 @@ describe('LogIngestGuard rejection visibility', () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     process.env.LOG_INGEST_REQUIRE_AUTH = 'true';
-    process.env.LOG_INGEST_BEARER_TOKENS = 'good-token';
     delete process.env.LOG_INGEST_SERVICE_ALLOWLIST;
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    // Auth validate fails unless a test stubs a valid principal.
+    global.fetch = jest.fn(async () => ({ ok: false })) as never;
   });
 
   afterEach(() => {
     errorSpy.mockRestore();
     process.env = { ...originalEnv };
     jest.restoreAllMocks();
-  });
-
-  beforeEach(() => {
-    // These cases cover the legacy static-credential path and its rejection
-    // logging, so auth is stubbed as "no valid principal" and the guard falls
-    // through to it. Unstubbed, the RS256 path would reach the network.
-    global.fetch = jest.fn(async () => ({ ok: false })) as never;
   });
 
   it('logs an error naming the service when a credential is missing', async () => {
@@ -73,7 +67,6 @@ describe('LogIngestGuard rejection visibility', () => {
 
     const logged = errorSpy.mock.calls.map((c) => JSON.stringify(c)).join(' ');
     expect(logged).not.toContain('super-secret-value');
-    expect(logged).not.toContain('good-token');
   });
 
   it('logs an error when a service is blocked by the allowlist', async () => {
@@ -86,11 +79,18 @@ describe('LogIngestGuard rejection visibility', () => {
     expect(logged).toContain('blocked-svc');
   });
 
-  it('stays silent when the credential is valid', async () => {
+  it('stays silent when the credential is a valid ingest principal', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        valid: true,
+        user: { roles: ['internal:logging-microservice:ingest'] },
+      }),
+    })) as never;
     const guard = new LogIngestGuard();
 
     await expect(
-      guard.canActivate(contextFor({ service: 'speakasap' }, { authorization: 'Bearer good-token' })),
+      guard.canActivate(contextFor({ service: 'speakasap' }, { authorization: 'Bearer rs256-token' })),
     ).resolves.toBe(true);
 
     expect(errorSpy).not.toHaveBeenCalled();
