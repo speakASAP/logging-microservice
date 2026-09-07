@@ -388,6 +388,7 @@ export class LogsService {
         message: resolvedMessage,
         service: logEntry.service,
         timestamp: logData.timestamp,
+        syntheticProbe: this.isSyntheticProbeMetadata(logEntry.metadata),
       });
 
       this.logger.log(logEntry.level, resolvedMessage, {
@@ -891,6 +892,12 @@ export class LogsService {
 
   private asNonEmptyString(value: unknown): string | null {
     return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private isSyntheticProbeMetadata(metadata: Record<string, any> | undefined): boolean {
+    if (!metadata || typeof metadata !== 'object') return false;
+    const flag = metadata.synthetic_probe ?? metadata.syntheticProbe;
+    return flag === true || flag === 1 || flag === '1' || /^true$/i.test(String(flag));
   }
 
 

@@ -26,8 +26,13 @@ data:
   # 2026-08-18 by POSTing from each pod (orders/suppliers -> 201). Reported as
   # `idle` in the coverage payload, never alerted on, so the alert stays actionable.
   # `probe`/`*-smoke` are one-off test artifacts, not real services.
-  LOG_IGNORE_STALE_SERVICES: "orders-microservice,suppliers-microservice,probe,logging-auth-smoke,logging-rollout-smoke"
-  LOG_EXPECTED_SERVICES: "speakasap,speakasap-api-gateway,speakasap-assessment,speakasap-certification,speakasap-course,speakasap-education,speakasap-financial,speakasap-notification,speakasap-payment,speakasap-salary,speakasap-user,payments-microservice,catalog-microservice,warehouse-microservice,marathon,backups-microservice,crypto-ai-agent,auth-microservice,notifications-microservice,orders-microservice,docs-rag-microservice,monitoring-microservice,suppliers-microservice,runlayer,flipflop-order-service,flipflop-product-service,api-gateway,minio-microservice,marketing-microservice"
+  # `api-gateway` is a retired SERVICE_NAME (now speakasap-api-gateway); leftover
+  # files on the PVC must not keep LogIngestStale firing.
+  # `speakasap` is the leftover api-gateway deployment that posted without a
+  # credential; ingress uses speakasap-api-gateway.
+  # assessment/certification/minio-admin-api hold credentials and ship on activity.
+  LOG_IGNORE_STALE_SERVICES: "orders-microservice,suppliers-microservice,probe,logging-auth-smoke,logging-rollout-smoke,api-gateway,speakasap,minio-microservice,speakasap-assessment,speakasap-certification"
+  LOG_EXPECTED_SERVICES: "speakasap-api-gateway,speakasap-assessment,speakasap-certification,speakasap-course,speakasap-education,speakasap-financial,speakasap-notification,speakasap-payment,speakasap-salary,speakasap-user,payments-microservice,catalog-microservice,warehouse-microservice,marathon,backups-microservice,crypto-ai-agent,auth-microservice,notifications-microservice,orders-microservice,docs-rag-microservice,monitoring-microservice,suppliers-microservice,runlayer,flipflop-order-service,flipflop-product-service,minio-microservice,marketing-microservice"
   LOG_TIMESTAMP_FORMAT: "YYYY-MM-DD HH:mm:ss"
   DOCKER_VOLUME_BASE_PATH: "./logs"
   PROJECT_BASE_PATH: "/home/ssf/Documents/Github/"

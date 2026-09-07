@@ -48,6 +48,20 @@ describe('ErrorIndex', () => {
     expect(a).toBe(b);
   });
 
+  it('collapses parameterized URLs and opaque kebab ids into one signature', () => {
+    const a = ErrorIndex.signature(
+      '404 Not Found: GET /payments/status/by-order-id?applicationId=cliplot&orderId=cliplot-readiness-monitor - Payment for application cliplot and order cliplot-readiness-monitor not found',
+    );
+    const b = ErrorIndex.signature(
+      '404 Not Found: GET /payments/status/by-order-id?applicationId=cliplot&orderId=cliplot-payment-status-readiness - Payment for application cliplot and order cliplot-payment-status-readiness not found',
+    );
+    const c = ErrorIndex.signature(
+      '404 Not Found: GET /payments/status/by-order-id?applicationId=cliplot&orderId=cliplot-read-scope-readiness - Payment for application cliplot and order cliplot-read-scope-readiness not found',
+    );
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
   it('does not collapse messages that merely look similar', () => {
     const a = ErrorIndex.signature('disk full on /var');
     const b = ErrorIndex.signature('permission denied on /var');
@@ -99,6 +113,44 @@ describe('ErrorIndex', () => {
   it('indexes warnings as well as errors', () => {
     index.record({ level: 'warn', message: 'degraded', service: 'a' });
     expect(index.summary().groups[0].level).toBe('warn');
+  });
+
+  it('classifies unmatched-route scanner 404s as probe traffic without a sender flag', () => {
+    index.record({
+      level: 'warn',
+      message: '404 Not Found: GET /.git/config - Cannot GET /.git/config',
+      service: 'payments-microservice',
+    });
+    expect(index.summary().groups[0].syntheticProbe).toBe(true);
+  });
+
+  it('does not treat a domain resource 404 as unmatched-route noise', () => {
+    index.record({
+      level: 'warn',
+      message:
+        '404 Not Found: GET /payments/status/by-order-id?orderId=real-customer-order - Payment for application cliplot and order real-customer-order not found',
+      service: 'payments-microservice',
+    });
+    expect(index.summary().groups[0].syntheticProbe).toBe(false);
+  });
+
+  it('keeps synthetic probe groups visible but separate from real faults', () => {
+    index.record({
+      level: 'error',
+      message: '404 Not Found: GET /payments/status/by-order-id?orderId=cliplot-readiness-monitor - missing',
+      service: 'payments-microservice',
+      syntheticProbe: true,
+    });
+    index.record({
+      level: 'error',
+      message: '404 Not Found: GET /payments/status/by-order-id?orderId=real-customer-order - missing',
+      service: 'payments-microservice',
+      syntheticProbe: false,
+    });
+    const groups = index.summary().groups;
+    expect(groups).toHaveLength(2);
+    expect(groups.filter((g) => g.syntheticProbe)).toHaveLength(1);
+    expect(groups.filter((g) => !g.syntheticProbe)).toHaveLength(1);
   });
 
   it('is case-insensitive about level', () => {

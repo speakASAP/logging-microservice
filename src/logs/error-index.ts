@@ -51,6 +51,11 @@ export interface ErrorGroup {
   firstSeen: string;
   lastSeen: string;
   sampleMessage: string;
+  /**
+   * True when the sender marked this as synthetic/test/readiness-probe traffic.
+   * Still indexed (visible) but ErrorLogWatcher must not alert on it.
+   */
+  syntheticProbe: boolean;
 }
 
 export interface ErrorSummary {
@@ -91,7 +96,13 @@ export class ErrorIndex {
       .replace(/\b\d{4}-\d{2}-\d{2}[T ][\d:.]+Z?\b/g, '<ts>')
       .replace(/"[^"]*"/g, '"<str>"')
       .replace(/'[^']*'/g, "'<str>'")
+      // Query strings carry per-request ids (orderId=..., applicationId=...) that
+      // otherwise survive path masking and split one fault into N alerts.
+      .replace(/\?[^\s]*/g, '')
       .replace(/\/[\w./-]{8,}/g, '<path>')
+      // Multi-segment kebab tokens are usually opaque ids (cliplot-readiness-monitor,
+      // cliplot-payment-status-readiness). Leave short service-like names alone.
+      .replace(/\b[a-z][a-z0-9]*(?:-[a-z0-9]+){2,}\b/gi, '<id>')
       // Deliberately not \b\d+\b: a word boundary does not exist between the
       // digits and the unit in "1200ms", so bounded matching leaves exactly the
       // varying part it was meant to remove, and two occurrences of one fault
@@ -112,6 +123,7 @@ export class ErrorIndex {
     message?: string;
     service?: string;
     timestamp?: string;
+    syntheticProbe?: boolean;
   }): void {
     try {
       const level = String(entry.level || '').toLowerCase();
@@ -119,8 +131,15 @@ export class ErrorIndex {
 
       const service = String(entry.service || 'unknown');
       const message = String(entry.message || '');
+      const unmatchedRoute =
+        /(?:^| - )Cannot (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \S/i.test(
+          message,
+        );
+      const syntheticProbe = entry.syntheticProbe === true || unmatchedRoute;
       const signature = ErrorIndex.signature(message);
-      const key = `${service}|${level}|${signature}`;
+      // Keep probe and real faults as separate groups so a real regression with
+      // the same message shape cannot be absorbed into probe noise.
+      const key = `${service}|${level}|${signature}|synth=${syntheticProbe ? '1' : '0'}`;
 
       // Prefer the sender's timestamp, but never trust it enough to let a
       // clock-skewed client pin an entry outside the window in either
@@ -161,6 +180,7 @@ export class ErrorIndex {
         firstSeen: iso,
         lastSeen: iso,
         sampleMessage: message.slice(0, 400),
+        syntheticProbe,
       });
     } catch {
       // Never propagate into ingest.
