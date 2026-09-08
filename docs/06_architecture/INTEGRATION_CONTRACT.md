@@ -17,7 +17,7 @@ the human-readable architecture and contract links.
 | Logging | `logging-microservice` | required | Internal Winston structured write to `logs/*.log` | `LOG_STORAGE_PATH`, `LOG_ROTATION_MAX_SIZE`, `LOG_ROTATION_MAX_FILES` | Write failure returns 500; caller falls back to local console logging | Log rotation and ingestion verification (see `TASKS.md`) |
 | Notifications | `notifications-microservice` | not-applicable | n/a | n/a | n/a | This service does not send end-user notifications |
 | AI | `ai-microservice` | not-applicable | n/a | n/a | n/a | No AI-driven behavior in this service |
-| Payments | `payments-microservice` | required | Payment webhook signature verification (`PAYMENT_API_KEY`, `PAYMENT_APPLICATION_ID`, `PAYMENT_WEBHOOK_API_KEY`) | Vault `secret/prod/logging-microservice` via ExternalSecret | Signature verification failure rejects the webhook call; logging ingestion is unaffected | Webhook signature check unit/integration test |
+| Payments | `payments-microservice` | required | Inbound payment **webhook** signature verification only (`PAYMENT_API_KEY`, `PAYMENT_APPLICATION_ID`, `PAYMENT_WEBHOOK_API_KEY`) — provider/callback lane, **not** Alfares machine S2S | Vault `secret/prod/logging-microservice` via ExternalSecret | Signature verification failure rejects the webhook call; logging ingestion is unaffected | Webhook signature check unit/integration test |
 | Catalog | `catalog-microservice` | not-applicable | n/a | n/a | n/a | No catalog data is read or written |
 | Orders | `orders-microservice` | not-applicable | n/a | n/a | n/a | No order data is read or written |
 | Warehouse | `warehouse-microservice` | not-applicable | n/a | n/a | n/a | No warehouse data is read or written |

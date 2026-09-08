@@ -93,11 +93,11 @@
       "capability": "payments",
       "component": "payments-microservice",
       "decision": "required",
-      "reason": "Handles payment webhook signature verification via PAYMENT_API_KEY/PAYMENT_APPLICATION_ID/PAYMENT_WEBHOOK_API_KEY (documented in SYSTEM.md).",
-      "contract": "Payment webhook signature verification",
-      "configuration": "Vault secret/prod/logging-microservice via ExternalSecret",
+      "reason": "Handles inbound payment webhook signature verification (provider/callback lane via PAYMENT_API_KEY/PAYMENT_APPLICATION_ID/PAYMENT_WEBHOOK_API_KEY in SYSTEM.md). This is not Alfares machine S2S — outbound Alfares S2S uses SERVICE_IDENTITY_CONSUMER_STANDARD.md only.",
+      "contract": "Payment webhook signature verification (provider-facing; not X-API-Key S2S to payments-microservice)",
+      "configuration": "Vault secret/prod/logging-microservice via ExternalSecret (webhook keys only; machine identity is separate Auth-issued pair RS256 Bearers)",
       "failureMode": "Signature verification failure rejects the webhook call; logging ingestion is unaffected",
-      "validation": "Webhook signature check unit/integration test"
+      "validation": "Webhook signature check unit/integration test; do not treat these keys as SERVICE_IDENTITY_CONSUMER_STANDARD.md credentials"
     },
     {
       "capability": "catalog",
