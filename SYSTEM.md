@@ -101,7 +101,7 @@ None outstanding as of 2026-08-30.
 | PAYMENT_WEBHOOK_API_KEY | secret/prod/logging-microservice |
 | JWT_TOKEN | secret/prod/logging-microservice |
 
-> Payment credentials exist because this service handles payment webhook signature verification in addition to logging. `JWT_TOKEN` is the service-to-service bearer token used for docs-RAG retrieval.
+> Payment webhook keys are provider-facing, not Alfares S2S. `JWT_TOKEN` must hold an Auth-issued `(logging-microservice -> docs-rag-microservice)` pair RS256 bearer per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md) — not a shared opaque secret and not a locally minted HS256 JWT.
 
 ## API Endpoints
 | Method | Path | Description |

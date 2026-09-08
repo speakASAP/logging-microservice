@@ -42,8 +42,10 @@ A credential shared by senders is prohibited. Verified in-pod:
 
 ```
 POST /api/logs  (no credential)     -> 401
-POST /api/logs  (Bearer $JWT_TOKEN) -> 201
+POST /api/logs  (Bearer <ingest credential>) -> 201
 ```
+
+Machine calls to other services use Auth-issued pair RS256 bearers per [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `JWT_TOKEN` must never authorize ingest.
 
 Ingest auth was enforced; these senders were never issued a credential. They have been
 POSTing into a 401 since, and nothing surfaced it.

@@ -21,6 +21,9 @@ Read `BUSINESS.md`, `SYSTEM.md`, `docs/00_constitution/CONSTITUTION.md`, `docs/0
 
 `BUSINESS.md` is human-owned and immutable to AI agents. `SYSTEM.md`, `CLAUDE.md`, and IPS planning documents may be proposed/updated by agents subject to review.
 
+## Service-to-service authentication
+For machine service identity, follow the sole canonical [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). It is not reproduced here.
+
 ## Intent Preservation System
 
 This repository follows `Vision -> Goal Impact -> System -> Feature -> Task -> Execution Plan -> Coding Prompt -> Code -> Validation` per `AGENT_OPERATIONS.md` and the central `intent-preservation-system` standard.

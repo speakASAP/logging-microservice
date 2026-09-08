@@ -311,11 +311,11 @@ Redaction contract:
   `src/auth/auth.controller.ts`, `src/auth/auth.service.ts`,
   `src/auth/dto/auth-response.dto.ts`, `src/auth/guards/jwt-auth.guard.ts`, and
   `src/main.ts`.
-- Payment/API-key consumption evidence: remote `payments-microservice`
-  `src/security/api-key.guard.ts`, `src/security/api-key-scope.util.ts`,
-  `src/payments/payments.controller.ts`, `src/payments/dto/create-payment.dto.ts`,
-  `src/connect/connect.controller.ts`, `src/common/filters/http-exception.filter.ts`,
-  and `src/main.ts`.
+- Payments machine/human auth evidence: remote `payments-microservice`
+  `src/auth/jwt-roles.guard.ts`, `src/payments/payments.controller.ts`,
+  `src/payments/dto/create-payment.dto.ts`, `src/connect/connect.controller.ts`,
+  `src/common/filters/http-exception.filter.ts`, `src/main.ts`, and S2S SPOT
+  [`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). Do not cite deleted `api-key.guard.ts` / `ApiKeyGuard` as live protocol.
 - Notification/webhook evidence: remote `notifications-microservice`
   `src/email/webhook-subscription.controller.ts`,
   `src/email/dto/webhook-subscription.dto.ts`,

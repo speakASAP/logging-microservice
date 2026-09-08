@@ -11,7 +11,7 @@ the human-readable architecture and contract links.
 
 | Capability | Component | Decision | Contract/API/event | Configuration | Failure mode | Validation evidence |
 | --- | --- | --- | --- | --- | --- | --- |
-| Auth | `auth-microservice` | required | Bearer JWT: admin roles for query/services; `internal:logging-microservice:ingest` for `POST /api/logs` | `AUTH_SERVICE_URL` ConfigMap value | Query/services and ingest return 401/403 when Auth unavailable or role missing | Authenticated ingest call + query with/without admin token |
+| Auth | `auth-microservice` | required | Machine callers: [Service Identity Consumer Standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). Receiver routes: `POST /api/logs` (ingest), `GET /api/logs/query`, `GET /api/logs/services` | `AUTH_SERVICE_URL` | Query/services and ingest fail closed when Auth unavailable or role missing | Authenticated ingest + query with/without admin token |
 | PostgreSQL | `db-server-postgres` | not-applicable | n/a | n/a | n/a | Log storage is file-based (Winston daily-rotate) on a Kubernetes PVC; no relational database is used |
 | Redis | `db-server-redis` | not-applicable | n/a | n/a | n/a | No caching or session layer is used by this service |
 | Logging | `logging-microservice` | required | Internal Winston structured write to `logs/*.log` | `LOG_STORAGE_PATH`, `LOG_ROTATION_MAX_SIZE`, `LOG_ROTATION_MAX_FILES` | Write failure returns 500; caller falls back to local console logging | Log rotation and ingestion verification (see `TASKS.md`) |
@@ -34,11 +34,15 @@ the human-readable architecture and contract links.
 
 ## Authentication and authorization
 
-Machine callers of `POST /api/logs` must follow the [canonical service identity standard](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md). `GET /api/logs/query` and `GET /api/logs/services` require a bearer access token carrying one of `global:superadmin`, `app:logging-microservice:admin`, or `internal:logging-microservice:admin`, verified against `auth-microservice`.
+Sole machine-identity authority:
+[`SERVICE_IDENTITY_CONSUMER_STANDARD.md`](../../../auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md).
+This contract does not restate protocol (headers, minting, role shape, dual-accept).
 
-`LogIngestGuard` (`src/auth/log-ingest.guard.ts`) validates the bearer through `POST /auth/validate` and requires `internal:logging-microservice:ingest` (or `:admin`). Roles come back resolved from Auth's database, so a revoked role stops working immediately rather than at `exp`. `global:superadmin` is deliberately not accepted: it is a human role, and a service token must never carry it.
+Logging-specific receiver facts:
 
-Static shared credential sets (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`) are removed. Every machine sender must present a per-pair Auth-issued RS256 principal minted with `auth-microservice/scripts/provision-service-token.js` and delivered Vault → ExternalSecret → Secret. Auth is always required on ingest — there is no open-door / `LOG_INGEST_REQUIRE_AUTH` off switch. Auth unreachable during validate fails closed.
+- Ingest: `POST /api/logs` — machine role `internal:logging-microservice:ingest` (guard: `src/auth/log-ingest.guard.ts`).
+- Admin read: `GET /api/logs/query`, `GET /api/logs/services` — human/admin lane (`global:superadmin` or `app:logging-microservice:admin` / `internal:logging-microservice:admin`).
+- Env: `AUTH_SERVICE_URL`. No static ingest API-key / shared-bearer fallback.
 
 ## Synchronous dependencies
 
