@@ -27,12 +27,13 @@ const INGEST_ROLES: ReadonlySet<string> = new Set([
 /**
  * Ingest gate for `POST /api/logs`.
  *
- * Auth-issued per-pair RS256 service credential carrying
- * `internal:logging-microservice:ingest`, per
+ * Auth is always required: Bearer → Auth `POST /auth/validate` → role
+ * `internal:logging-microservice:ingest` or `:admin`, per
  * `auth-microservice/docs/SERVICE_IDENTITY_CONSUMER_STANDARD.md`.
  *
- * Static shared credentials (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`)
- * are deleted — not flag-gated. A sender without a real principal is refused.
+ * There is no open-ingest / `LOG_INGEST_REQUIRE_AUTH` off switch. Static shared
+ * credentials (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`) are deleted.
+ * Missing or invalid auth fails loud with 401.
  */
 @Injectable()
 export class LogIngestGuard implements CanActivate {
@@ -41,10 +42,6 @@ export class LogIngestGuard implements CanActivate {
     const serviceName = this.normalizeServiceName(request.body?.service);
 
     this.enforceServiceAllowlist(serviceName);
-
-    if (!this.requireAuth()) {
-      return true;
-    }
 
     if (await this.hasValidServicePrincipal(request)) {
       return true;
@@ -85,10 +82,6 @@ export class LogIngestGuard implements CanActivate {
     const apiKey = this.firstHeader(request, 'x-logging-api-key')
       || this.firstHeader(request, 'x-api-key');
     return Boolean(authorization || apiKey);
-  }
-
-  private requireAuth(): boolean {
-    return (process.env.LOG_INGEST_REQUIRE_AUTH || '').toLowerCase() === 'true';
   }
 
   /**

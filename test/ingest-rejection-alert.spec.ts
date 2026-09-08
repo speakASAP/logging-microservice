@@ -19,7 +19,7 @@ describe('LogIngestGuard rejection visibility', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    process.env.LOG_INGEST_REQUIRE_AUTH = 'true';
+    delete process.env.LOG_INGEST_REQUIRE_AUTH;
     delete process.env.LOG_INGEST_SERVICE_ALLOWLIST;
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     // Auth validate fails unless a test stubs a valid principal.

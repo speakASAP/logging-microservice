@@ -38,7 +38,7 @@ Machine callers of `POST /api/logs` must follow the [canonical service identity 
 
 `LogIngestGuard` (`src/auth/log-ingest.guard.ts`) validates the bearer through `POST /auth/validate` and requires `internal:logging-microservice:ingest` (or `:admin`). Roles come back resolved from Auth's database, so a revoked role stops working immediately rather than at `exp`. `global:superadmin` is deliberately not accepted: it is a human role, and a service token must never carry it.
 
-Static shared credential sets (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`) are removed. Every machine sender must present a per-pair Auth-issued RS256 principal minted with `auth-microservice/scripts/provision-service-token.js` and delivered Vault → ExternalSecret → Secret. Enforcement requires `LOG_INGEST_REQUIRE_AUTH=true`. Auth unreachable during validate fails closed.
+Static shared credential sets (`LOG_INGEST_API_KEYS`, `LOG_INGEST_BEARER_TOKENS`) are removed. Every machine sender must present a per-pair Auth-issued RS256 principal minted with `auth-microservice/scripts/provision-service-token.js` and delivered Vault → ExternalSecret → Secret. Auth is always required on ingest — there is no open-door / `LOG_INGEST_REQUIRE_AUTH` off switch. Auth unreachable during validate fails closed.
 
 ## Synchronous dependencies
 
